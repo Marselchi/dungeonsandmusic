@@ -1,55 +1,51 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
-import { Disc3, ListMusic, Loader2, LogOut, Music2, Pause, Play, Plus, Radio, Search, Server, SkipForward, Trash2, Volume2, Wifi, X } from "lucide-react";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useMemo, useState } from "react";
+import { Disc3, LogOut, Radio, Server, Wifi } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Progress } from "@/components/ui/progress";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
-import { Slider } from "@/components/ui/slider";
-import { Skeleton } from "@/components/ui/skeleton";
 import { useBackend } from "@/lib/store/backend-context";
-import { useChannels, useDownloadProgress, useGuilds, useLibrarySearch, usePlayerState, usePlaylists, useQueue } from "@/lib/store/hooks";
-
-function formatDuration(seconds: number | null) { if (seconds == null) return "—"; const mins = Math.floor(seconds / 60); return `${mins}:${String(Math.floor(seconds % 60)).padStart(2, "0")}`; }
+import { useChannels, useDownloadProgress, useGuilds, usePlayerState, useQueue } from "@/lib/store/hooks";
+import { MusicSidebar } from "@/components/music-sidebar";
+import { NowPlayingCard } from "@/components/now-playing-card";
+import { LibraryCard } from "@/components/library-card";
+import { QueueCard } from "@/components/queue-card";
+import { VoiceChannelCard } from "@/components/voice-channel-card";
+import { PlaylistsCard } from "@/components/playlists-card";
+import { DownloadProgress } from "@/components/download-progress";
 
 export function MusicConsole() {
-  const { setToken, backendUrl, socketStatus } = useBackend();
+  const { setToken, socketStatus } = useBackend();
   const guilds = useGuilds();
   const [guildId, setGuildId] = useState<string | null>(null);
   const selectedGuild = useMemo(() => guilds.data?.find((guild) => guild.id === guildId), [guilds.data, guildId]);
   const channels = useChannels(guildId);
   const player = usePlayerState(guildId);
   const queue = useQueue(guildId);
-  const library = useLibrarySearch();
-  const playlists = usePlaylists();
   const progress = useDownloadProgress();
-  const [query, setQuery] = useState("");
-  const [queueInput, setQueueInput] = useState("");
-  const [volume, setVolume] = useState([Math.round((player.data?.volume ?? 1) * 100)]);
 
-  function selectGuild(id: string) { setGuildId(id); }
-  async function search(event: FormEvent) { event.preventDefault(); if (query.trim()) await library.search(query.trim()); }
-  async function addQueue(event: FormEvent) { event.preventDefault(); if (!queueInput.trim()) return; await queue.addToQueue(queueInput.trim().startsWith("http") ? { url: queueInput.trim() } : { query: queueInput.trim() }); setQueueInput(""); }
-  const currentTrack = player.data?.currentTrackId ? queue.data?.find((item) => item.trackId === player.data?.currentTrackId)?.track : null;
-
-  return <main className="min-h-screen bg-background text-foreground"><div className="mx-auto flex min-h-screen max-w-[1500px] flex-col lg:flex-row">
-    <aside className="flex w-full flex-col border-b bg-card/40 p-5 lg:min-h-screen lg:w-72 lg:border-b-0 lg:border-r"><div className="flex items-center gap-3"><div className="flex size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground"><Disc3 data-icon="inline-start" /></div><div><p className="font-mono text-xs uppercase tracking-[0.2em] text-primary">Dungeons</p><p className="text-sm font-medium">& Music</p></div></div>
-      <div className="mt-8 flex flex-col gap-2"><p className="px-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">Servers</p>{guilds.loading ? <><Skeleton className="h-12" /><Skeleton className="h-12" /></> : guilds.data?.map((guild) => <button key={guild.id} onClick={() => selectGuild(guild.id)} className={`flex items-center gap-3 rounded-lg px-2 py-2 text-left transition-colors hover:bg-accent ${guild.id === guildId ? "bg-accent" : ""}`}><Avatar className="size-9"><AvatarImage src={guild.iconUrl ?? undefined} alt="" /><AvatarFallback>{guild.name.slice(0, 2).toUpperCase()}</AvatarFallback></Avatar><span className="min-w-0 flex-1 truncate text-sm">{guild.name}</span>{guild.id === guildId && <span className="size-2 rounded-full bg-primary" />}</button>)}</div>
-      <div className="mt-auto flex flex-col gap-3 pt-8"><Separator /><div className="flex items-center gap-2 px-2 text-xs text-muted-foreground"><span className={`size-2 rounded-full ${socketStatus === "open" ? "bg-primary" : "bg-muted-foreground"}`} /> {socketStatus === "open" ? "Live connection" : "Connecting…"}</div><Button variant="ghost" className="justify-start text-muted-foreground" onClick={() => setToken(null)}><LogOut data-icon="inline-start" /> Disconnect</Button></div>
-    </aside>
-    <section className="flex min-w-0 flex-1 flex-col"><header className="flex flex-wrap items-center justify-between gap-4 border-b px-6 py-5 lg:px-8"><div><p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Control room</p><h1 className="mt-1 text-2xl font-semibold tracking-tight">{selectedGuild?.name ?? "Select a server"}</h1></div><div className="flex items-center gap-3"><Select value={guildId ?? ""} onValueChange={selectGuild}><SelectTrigger className="w-52"><Server data-icon="inline-start" /><SelectValue placeholder="Choose server" /></SelectTrigger><SelectContent><SelectItem value="placeholder" disabled>Choose server</SelectItem>{guilds.data?.map((guild) => <SelectItem key={guild.id} value={guild.id}>{guild.name}</SelectItem>)}</SelectContent></Select><Badge variant="outline" className="hidden gap-2 py-1.5 sm:inline-flex"><span className={`size-1.5 rounded-full ${socketStatus === "open" ? "bg-primary" : "bg-muted-foreground"}`} /> {socketStatus === "open" ? "Online" : "Offline"}</Badge></div></header>
-      {!guildId ? <div className="flex flex-1 items-center justify-center p-8"><div className="max-w-md text-center"><div className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-primary/10 text-primary"><Radio data-icon="inline-start" /></div><h2 className="mt-5 text-xl font-semibold">Choose a server to get started</h2><p className="mt-2 leading-6 text-muted-foreground">Select a Discord server from the sidebar, then choose a voice channel to start controlling playback.</p></div></div> : <div className="grid gap-6 p-6 lg:grid-cols-[minmax(0,1.35fr)_minmax(300px,0.65fr)] lg:p-8"><div className="flex min-w-0 flex-col gap-6"><Card className="overflow-hidden"><CardHeader className="flex flex-row items-start justify-between gap-4"><div><CardDescription>Now playing</CardDescription><CardTitle className="mt-1 text-2xl">{currentTrack?.title ?? "Nothing queued"}</CardTitle></div><Badge variant={player.data?.state === "playing" ? "default" : "secondary"}>{player.data?.state ?? "idle"}</Badge></CardHeader><CardContent><div className="flex flex-col gap-5 sm:flex-row sm:items-center"><div className="flex size-28 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-muted">{currentTrack?.thumbnailUrl ? <img src={currentTrack.thumbnailUrl} alt="" className="size-full object-cover" /> : <Disc3 className="size-10 text-muted-foreground" />}</div><div className="min-w-0 flex-1"><p className="truncate font-medium">{currentTrack?.title ?? "Pick a track from your library"}</p><p className="mt-1 text-sm text-muted-foreground">{currentTrack ? formatDuration(currentTrack.durationSeconds) : "Ready when you are"}</p><div className="mt-5 flex items-center gap-2"><Button size="icon" variant="outline" onClick={() => player.skip()} disabled={!player.data}><SkipForward data-icon="inline-start" /></Button><Button size="icon" onClick={() => player.data?.state === "playing" ? player.pause() : player.resume()} disabled={!player.data}>{player.data?.state === "playing" ? <Pause data-icon="inline-start" /> : <Play data-icon="inline-start" />}</Button><div className="ml-auto flex items-center gap-2"><Volume2 className="size-4 text-muted-foreground" /><Slider value={volume} onValueChange={(value) => { setVolume(value); player.setVolume((value[0] ?? 100) / 100); }} max={200} step={1} className="w-28" /></div></div></div></div></CardContent></Card>
-        <Card><CardHeader><div className="flex items-center justify-between"><div><CardTitle>Library</CardTitle><CardDescription>Search cached tracks and add them to playback.</CardDescription></div><ListMusic className="size-5 text-primary" /></div></CardHeader><CardContent className="flex flex-col gap-4"><form onSubmit={search} className="flex gap-2"><Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search by title or artist" aria-label="Search library" /><Button type="submit" variant="secondary" disabled={library.loading}>{library.loading ? <Loader2 data-icon="inline-start" className="animate-spin" /> : <Search data-icon="inline-start" />} Search</Button></form>{library.error && <Alert variant="destructive"><AlertDescription>{library.error.message}</AlertDescription></Alert>}<ScrollArea className="h-64">{library.data?.length ? <div className="flex flex-col gap-1">{library.data.map((track) => <div key={track.id} className="flex items-center gap-3 rounded-lg p-2 hover:bg-accent"><div className="flex size-10 items-center justify-center overflow-hidden rounded bg-muted">{track.thumbnailUrl ? <img src={track.thumbnailUrl} alt="" className="size-full object-cover" /> : <Music2 className="size-4 text-muted-foreground" />}</div><div className="min-w-0 flex-1"><p className="truncate text-sm font-medium">{track.title}</p><p className="text-xs text-muted-foreground">{formatDuration(track.durationSeconds)}</p></div><Button size="icon" variant="ghost" onClick={() => queue.addToQueue({ trackId: track.id })} aria-label={`Add ${track.title} to queue`}><Plus data-icon="inline-start" /></Button></div>)}</div> : <div className="flex h-full items-center justify-center text-sm text-muted-foreground">Search your library to see tracks.</div>}</ScrollArea></CardContent></Card></div>
-        <div className="flex min-w-0 flex-col gap-6"><Card><CardHeader><div className="flex items-center justify-between"><div><CardTitle>Queue</CardTitle><CardDescription>{queue.data?.length ?? 0} tracks waiting</CardDescription></div><Button size="icon" variant="ghost" onClick={() => queue.clearQueue()} aria-label="Clear queue"><Trash2 data-icon="inline-start" /></Button></div></CardHeader><CardContent className="flex flex-col gap-4"><form onSubmit={addQueue} className="flex gap-2"><Input value={queueInput} onChange={(event) => setQueueInput(event.target.value)} placeholder="Paste a URL or search" aria-label="Add to queue" /><Button type="submit" size="icon" aria-label="Add to queue"><Plus data-icon="inline-start" /></Button></form><ScrollArea className="h-72">{queue.loading ? <div className="flex flex-col gap-3"><Skeleton className="h-12" /><Skeleton className="h-12" /><Skeleton className="h-12" /></div> : queue.data?.length ? <div className="flex flex-col gap-1">{queue.data.map((item) => <div key={`${item.trackId}-${item.position}`} className="group flex items-center gap-3 rounded-lg p-2 hover:bg-accent"><span className="w-5 text-center font-mono text-xs text-muted-foreground">{item.position + 1}</span><div className="min-w-0 flex-1"><p className="truncate text-sm">{item.track.title}</p><p className="text-xs text-muted-foreground">{formatDuration(item.track.durationSeconds)}</p></div><Button size="icon" variant="ghost" className="opacity-0 transition-opacity group-hover:opacity-100" onClick={() => queue.removeFromQueue(item.position)} aria-label={`Remove ${item.track.title}`}><X data-icon="inline-start" /></Button></div>)}</div> : <div className="flex h-full items-center justify-center text-sm text-muted-foreground">Your queue is empty.</div>}</ScrollArea></CardContent></Card>
-          <Card><CardHeader><CardTitle>Voice channel</CardTitle><CardDescription>Join a channel to route playback.</CardDescription></CardHeader><CardContent className="flex flex-col gap-3"><Select onValueChange={(value) => player.join(value)}><SelectTrigger><SelectValue placeholder="Choose voice channel" /></SelectTrigger><SelectContent>{channels.data?.map((channel) => <SelectItem key={channel.id} value={channel.id}>{channel.name}</SelectItem>)}</SelectContent></Select><Button variant="outline" onClick={() => player.leave()} disabled={!player.data}><Wifi data-icon="inline-start" /> Leave channel</Button></CardContent></Card>
-          <Card><CardHeader><CardTitle>Playlists</CardTitle><CardDescription>{playlists.data?.length ?? 0} saved collections</CardDescription></CardHeader><CardContent className="flex flex-col gap-2">{playlists.data?.length ? playlists.data.map((playlist) => <div key={playlist.id} className="flex items-center gap-2 rounded-lg bg-muted/50 px-3 py-2 text-sm"><ListMusic className="size-4 text-primary" /><span className="flex-1 truncate">{playlist.name}</span><Button size="icon" variant="ghost" onClick={() => playlists.remove(playlist.id)} aria-label={`Delete ${playlist.name}`}><Trash2 data-icon="inline-start" /></Button></div>) : <p className="text-sm text-muted-foreground">Create playlists from your backend to see them here.</p>}</CardContent></Card>
-        </div></div>}
-    </section></div>{Object.entries(progress).map(([jobId, job]) => <div key={jobId} className="fixed bottom-5 right-5 w-72 rounded-xl border bg-card p-4 shadow-xl"><div className="flex items-center justify-between text-sm"><span>Downloading track</span><span className="text-muted-foreground">{job.done}/{job.total}</span></div><Progress value={job.total ? (job.done / job.total) * 100 : 0} className="mt-3" /></div>)}</main>;
+  return (
+    <main className="min-h-screen bg-background text-foreground">
+      <div className="mx-auto flex min-h-screen max-w-[1500px] flex-col lg:flex-row">
+        <MusicSidebar guilds={guilds} guildId={guildId} onSelectGuild={setGuildId} socketStatus={socketStatus} onDisconnect={() => setToken(null)} />
+        <section className="flex min-w-0 flex-1 flex-col">
+          <header className="flex flex-wrap items-center justify-between gap-4 border-b px-6 py-5 lg:px-8">
+            <div><p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Пульт управления</p><h1 className="mt-1 text-2xl font-semibold tracking-tight">{selectedGuild?.name ?? "Выберите сервер"}</h1></div>
+            <div className="flex items-center gap-3">
+              <Select value={guildId ?? ""} onValueChange={setGuildId}>
+                <SelectTrigger className="w-52"><Server data-icon="inline-start" /><SelectValue placeholder="Выбрать сервер" /></SelectTrigger>
+                <SelectContent>{guilds.data?.map((guild) => <SelectItem key={guild.id} value={guild.id}>{guild.name}</SelectItem>)}</SelectContent>
+              </Select>
+              <Badge variant="outline" className="hidden gap-2 py-1.5 sm:inline-flex"><span className={`size-1.5 rounded-full ${socketStatus === "open" ? "bg-primary" : "bg-muted-foreground"}`} />{socketStatus === "open" ? "Онлайн" : "Офлайн"}</Badge>
+            </div>
+          </header>
+          {!guildId ? <div className="flex flex-1 items-center justify-center p-8"><div className="max-w-md text-center"><div className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-primary/10 text-primary"><Radio data-icon="inline-start" /></div><h2 className="mt-5 text-xl font-semibold">Выберите сервер, чтобы начать</h2><p className="mt-2 leading-6 text-muted-foreground">Выберите Discord-сервер в боковой панели, затем голосовой канал для управления музыкой.</p></div></div> : <div className="grid gap-6 p-6 lg:grid-cols-[minmax(0,1.35fr)_minmax(300px,0.65fr)] lg:p-8"><div className="flex min-w-0 flex-col gap-6"><NowPlayingCard player={player} queue={queue} /><LibraryCard queue={queue} /></div><div className="flex min-w-0 flex-col gap-6"><QueueCard queue={queue} /><VoiceChannelCard channels={channels} player={player} /><PlaylistsCard /></div></div>}
+        </section>
+      </div>
+      <DownloadProgress progress={progress} />
+    </main>
+  );
 }
+
+export function formatDuration(seconds: number | null) { if (seconds == null) return "—"; return `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, "0")}`; }
