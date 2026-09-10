@@ -129,7 +129,12 @@ export function useQueue(guildId: string | null) {
 export function usePlayerState(guildId: string | null) {
   const { api, socket } = useBackend();
   const [state, setState] = useState<AsyncState<PlayerState>>(INITIAL_STATE);
+  const [voiceChannelId, setVoiceChannelId] = useState<string | null>(null);
   useGuildSubscription(guildId);
+
+  useEffect(() => {
+    setVoiceChannelId(null);
+  }, [guildId]);
 
   const refetch = useCallback(async () => {
     if (!guildId) return;
@@ -178,8 +183,18 @@ export function usePlayerState(guildId: string | null) {
     if (!socket || !guildId) return;
     const refresh = () => refetch();
     const cleanups = [
-      socket.on("voice.connected", (payload) => { if (payload.guildId === guildId) refresh(); }),
-      socket.on("voice.disconnected", (payload) => { if (payload.guildId === guildId) refresh(); }),
+      socket.on("voice.connected", (payload) => {
+        if (payload.guildId === guildId) {
+          setVoiceChannelId(payload.channelId);
+          refresh();
+        }
+      }),
+      socket.on("voice.disconnected", (payload) => {
+        if (payload.guildId === guildId) {
+          setVoiceChannelId(null);
+          refresh();
+        }
+      }),
     ];
     return () => cleanups.forEach((cleanup) => cleanup());
   }, [socket, guildId, refetch]);
@@ -189,8 +204,15 @@ export function usePlayerState(guildId: string | null) {
   return {
     ...state,
     refetch,
-    join: (channelId: string) => guard((id) => api.joinVoiceChannel(id, channelId)),
-    leave: () => guard((id) => api.leaveVoiceChannel(id)),
+    voiceChannelId,
+    join: async (channelId: string) => {
+      await guard((id) => api.joinVoiceChannel(id, channelId));
+      setVoiceChannelId(channelId);
+    },
+    leave: async () => {
+      await guard((id) => api.leaveVoiceChannel(id));
+      setVoiceChannelId(null);
+    },
     play: (position?: number) => guard((id) => api.play(id, position)),
     playTrack: (trackId: string) => guard((id) => api.playTrack(id, trackId)),
     pause: () => guard((id) => api.pause(id)),

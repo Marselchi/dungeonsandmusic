@@ -29,7 +29,10 @@ export function VoiceChannelCard({
         <CardDescription>Выберите канал для воспроизведения.</CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
-        <Select onValueChange={(value: string) => player.join(value)}>
+        <Select
+          value={player.voiceChannelId ?? ""}
+          onValueChange={(value: string) => void player.join(value)}
+        >
           <SelectTrigger>
             <SelectValue placeholder="Выбрать канал" />
           </SelectTrigger>

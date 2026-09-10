@@ -21,6 +21,44 @@ export function QueueCard({ queue, player }: Readonly<{ queue: any; player: any 
     setPending(true);
     try { await action(); toast.success(message); await queue.refetch(); } catch (error) { toast.error((error as Error).message); } finally { setPending(false); }
   };
+  const queueItems = queue.data ?? [];
+  const queueContent = queue.loading ? (
+    <div className="flex flex-col gap-3">
+      <Skeleton className="h-12" />
+      <Skeleton className="h-12" />
+      <Skeleton className="h-12" />
+    </div>
+  ) : queueItems.length > 0 ? (
+    <div className="flex flex-col gap-1">
+      {queueItems.map((item: any) => (
+        <div
+          key={`${item.trackId}-${item.position}`}
+          className="grid min-w-0 grid-cols-[1.5rem_minmax(0,1fr)_2.25rem_2.25rem] items-center gap-1 rounded-lg p-2 hover:bg-accent"
+        >
+          <span className="text-center font-mono text-xs text-muted-foreground">
+            {item.position + 1}
+          </span>
+          <div className="min-w-0">
+            <p className="truncate text-sm" title={item.track.title}>{item.track.title}</p>
+            <p className="text-xs text-muted-foreground">
+              {formatDuration(item.track.durationSeconds)}
+            </p>
+          </div>
+          <Button className="size-9" size="icon" variant="ghost" onClick={() => void run(() => player.play(item.position), "Воспроизведение начато")} disabled={pending} aria-label={`Воспроизвести ${item.track.title}`}>
+            {pending ? <Loader2 className="animate-spin" /> : <Play />}
+          </Button>
+          <Button className="size-9" size="icon" variant="ghost" onClick={() => void run(() => queue.removeFromQueue(item.position), "Трек удалён из очереди")} aria-label={`Удалить ${item.track.title}`}>
+            <X />
+          </Button>
+        </div>
+      ))}
+    </div>
+  ) : (
+    <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+      Очередь пуста.
+    </div>
+  );
+
   return (
     <Card>
       <CardHeader>
@@ -68,48 +106,7 @@ export function QueueCard({ queue, player }: Readonly<{ queue: any; player: any 
           </Button>
         </form>
         <ScrollArea className="h-72">
-          {queue.loading ? (
-            <div className="flex flex-col gap-3">
-              <Skeleton className="h-12" />
-              <Skeleton className="h-12" />
-              <Skeleton className="h-12" />
-            </div>
-          ) : queue.data?.length ? (
-            <div className="flex flex-col gap-1">
-              {queue.data.map((item: any) => (
-                <div
-                  key={`${item.trackId}-${item.position}`}
-                  className="group flex min-w-0 items-center gap-2 rounded-lg p-2 hover:bg-accent"
-                >
-                  <span className="size-5 shrink-0 text-center font-mono text-xs text-muted-foreground">
-                    {item.position + 1}
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm">{item.track.title}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {formatDuration(item.track.durationSeconds)}
-                    </p>
-                  </div>
-                  <Button className="shrink-0" size="icon" variant="ghost" onClick={() => void run(() => player.play(item.position), "Воспроизведение начато")} disabled={pending} aria-label={`Воспроизвести ${item.track.title}`}>
-                    {pending ? <Loader2 className="animate-spin" /> : <Play />}
-                  </Button>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="shrink-0"
-                    onClick={() => void run(() => queue.removeFromQueue(item.position), "Трек удалён из очереди")}
-                    aria-label={`Удалить ${item.track.title}`}
-                  >
-                    <X />
-                  </Button>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-              Очередь пуста.
-            </div>
-          )}
+          {queueContent}
         </ScrollArea>
       </CardContent>
     </Card>
