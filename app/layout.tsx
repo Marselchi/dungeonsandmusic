@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { BackendProvider } from "@/lib/store/backend-context";
+import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -14,6 +15,7 @@ export default function RootLayout({
     <html lang="en" className="dark bg-background">
       <body>
         <BackendProvider>{children}</BackendProvider>
+        <Toaster />
       </body>
     </html>
   );

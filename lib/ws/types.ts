@@ -6,6 +6,7 @@ export interface ServerEvents {
   "track.ended": { guildId: string; trackId: string; reason: "finished" | "skipped" | "error" };
   "queue.changed": { guildId: string };
   "player.stateChanged": { guildId: string; state: PlaybackState };
+  "player.positionChanged": { guildId: string; positionSeconds: number; durationSeconds: number | null; updatedAt: number };
   "download.progress": { jobId: string; done: number; total: number };
   "voice.connected": { guildId: string; channelId: string };
   "voice.disconnected": { guildId: string };

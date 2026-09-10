@@ -11,6 +11,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
+import { Progress } from "@/components/ui/progress";
+import { toast } from "sonner";
 import { formatDuration } from "@/components/music-console";
 
 type Props = { player: any; queue: any };
@@ -20,6 +22,13 @@ export function NowPlayingCard({ player, queue }: Readonly<Props>) {
         (item: any) => item.trackId === player.data.currentTrackId,
       )?.track
     : null;
+  const position = player.data?.positionSeconds ?? 0;
+  const duration = player.data?.durationSeconds ?? currentTrack?.durationSeconds ?? 0;
+  const progress = duration > 0 ? Math.min(100, (position / duration) * 100) : 0;
+  const run = async (action: () => Promise<unknown>, success: string) => {
+    try { await action(); toast.success(success); await player.refetch(); } catch (error) { toast.error((error as Error).message); }
+  };
+
   return (
     <Card className="overflow-hidden">
       <CardHeader className="flex flex-row items-start justify-between gap-4">
@@ -53,15 +62,14 @@ export function NowPlayingCard({ player, queue }: Readonly<Props>) {
               {currentTrack?.title ?? "Выберите трек в библиотеке"}
             </p>
             <p className="mt-1 text-sm text-muted-foreground">
-              {currentTrack
-                ? formatDuration(currentTrack.durationSeconds)
-                : "Готово к воспроизведению"}
+              {formatDuration(position)} / {formatDuration(duration || null)}
             </p>
+            <Progress value={progress} className="mt-4" aria-label="Прогресс воспроизведения" />
             <div className="mt-5 flex items-center gap-2">
               <Button
                 size="icon"
                 variant="outline"
-                onClick={() => player.skip()}
+                onClick={() => void run(() => player.skip(), "Трек пропущен")}
                 disabled={!player.data}
               >
                 <SkipForward />
@@ -70,8 +78,8 @@ export function NowPlayingCard({ player, queue }: Readonly<Props>) {
                 size="icon"
                 onClick={() =>
                   player.data?.state === "playing"
-                    ? player.pause()
-                    : player.resume()
+                    ? void run(() => player.pause(), "Пауза включена")
+                    : void run(() => player.resume(), "Воспроизведение продолжено")
                 }
                 disabled={!player.data}
               >

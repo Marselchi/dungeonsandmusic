@@ -12,11 +12,16 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useLibrarySearch } from "@/lib/store/hooks";
+import { useLibraryActions, useLibrarySearch } from "@/lib/store/hooks";
+import { toast } from "sonner";
 import { formatDuration } from "@/components/music-console";
 
 export function LibraryCard({ queue }: Readonly<{ queue: any }>) {
   const library = useLibrarySearch();
+  const actions = useLibraryActions();
+  const run = async (action: () => Promise<unknown>, message: string) => {
+    try { await action(); toast.success(message); } catch (error) { toast.error((error as Error).message); }
+  };
   return (
     <Card>
       <CardHeader>
@@ -87,14 +92,25 @@ export function LibraryCard({ queue }: Readonly<{ queue: any }>) {
                       {formatDuration(track.durationSeconds)}
                     </p>
                   </div>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    onClick={() => queue.addToQueue({ trackId: track.id })}
-                    aria-label={`Добавить ${track.title}`}
-                  >
-                    <Plus />
-                  </Button>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => void run(() => actions.ensure(track.id), "Трек добавлен в библиотеку")}
+                      disabled={actions.loading}
+                      aria-label={`Сохранить ${track.title} в библиотеку`}
+                    >
+                      <ListMusic />
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => void run(() => queue.addToQueue({ trackId: track.id }), "Трек добавлен в очередь")}
+                      aria-label={`Добавить ${track.title} в очередь`}
+                    >
+                      <Plus />
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>

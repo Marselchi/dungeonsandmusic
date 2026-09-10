@@ -31,7 +31,9 @@ export interface PlayerState {
   guildId: string;
   state: PlaybackState;
   currentTrackId: string | null;
-  positionSeconds: number; // not yet wired up on the backend — don't build a scrubber against it
+  positionSeconds: number;
+  durationSeconds: number | null;
+  updatedAt: number;
   volume: number; // 0.0 - 2.0, 1.0 = default
 }
 

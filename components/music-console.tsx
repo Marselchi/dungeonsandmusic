@@ -106,7 +106,7 @@ export function MusicConsole() {
                 <LibraryCard queue={queue} />
               </div>
               <div className="flex min-w-0 flex-col gap-6">
-                <QueueCard queue={queue} />
+                <QueueCard queue={queue} player={player} />
                 <VoiceChannelCard channels={channels} player={player} />
                 <PlaylistsCard />
               </div>

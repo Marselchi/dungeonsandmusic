@@ -166,6 +166,24 @@ export function usePlayerState(guildId: string | null) {
     });
   }, [socket, guildId, refetch]);
 
+  useEffect(() => {
+    if (!socket || !guildId) return;
+    return socket.on("player.positionChanged", (payload) => {
+      if (payload.guildId !== guildId) return;
+      setState((current) => current.data ? { ...current, data: { ...current.data, positionSeconds: payload.positionSeconds, durationSeconds: payload.durationSeconds, updatedAt: payload.updatedAt } } : current);
+    });
+  }, [socket, guildId]);
+
+  useEffect(() => {
+    if (!socket || !guildId) return;
+    const refresh = () => refetch();
+    const cleanups = [
+      socket.on("voice.connected", (payload) => { if (payload.guildId === guildId) refresh(); }),
+      socket.on("voice.disconnected", (payload) => { if (payload.guildId === guildId) refresh(); }),
+    ];
+    return () => cleanups.forEach((cleanup) => cleanup());
+  }, [socket, guildId, refetch]);
+
   const guard = <T,>(fn: (id: string) => Promise<T>) => (guildId ? fn(guildId) : Promise.reject(new Error("No guild selected")));
 
   return {
@@ -173,7 +191,8 @@ export function usePlayerState(guildId: string | null) {
     refetch,
     join: (channelId: string) => guard((id) => api.joinVoiceChannel(id, channelId)),
     leave: () => guard((id) => api.leaveVoiceChannel(id)),
-    play: () => guard((id) => api.play(id)),
+    play: (position?: number) => guard((id) => api.play(id, position)),
+    playTrack: (trackId: string) => guard((id) => api.playTrack(id, trackId)),
     pause: () => guard((id) => api.pause(id)),
     resume: () => guard((id) => api.resume(id)),
     skip: () => guard((id) => api.skip(id)),
@@ -321,6 +340,20 @@ export function useLibrarySearch() {
 }
 
 /** Tracks in-progress scan/download jobs by id, fed entirely by `download.progress` events. */
+export function useLibraryActions() {
+  const { api } = useBackend();
+  const [loading, setLoading] = useState(false);
+  const download = useCallback(async (body: { url?: string; query?: string }) => {
+    setLoading(true);
+    try { return await api.downloadLibrary(body); } finally { setLoading(false); }
+  }, [api]);
+  const ensure = useCallback(async (trackId: string) => {
+    setLoading(true);
+    try { return await api.ensureLibraryTrack(trackId); } finally { setLoading(false); }
+  }, [api]);
+  return { loading, download, ensure };
+}
+
 export function useDownloadProgress() {
   const { socket } = useBackend();
   const [jobs, setJobs] = useState<Record<string, { done: number; total: number }>>({});

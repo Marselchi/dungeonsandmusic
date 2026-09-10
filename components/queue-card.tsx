@@ -1,5 +1,6 @@
 "use client";
-import { Plus, Trash2, X } from "lucide-react";
+import { useState } from "react";
+import { Play, Plus, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -12,7 +13,14 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDuration } from "@/components/music-console";
-export function QueueCard({ queue }: Readonly<{ queue: any }>) {
+import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
+export function QueueCard({ queue, player }: Readonly<{ queue: any; player: any }>) {
+  const [pending, setPending] = useState(false);
+  const run = async (action: () => Promise<unknown>, message: string) => {
+    setPending(true);
+    try { await action(); toast.success(message); await queue.refetch(); } catch (error) { toast.error((error as Error).message); } finally { setPending(false); }
+  };
   return (
     <Card>
       <CardHeader>
@@ -82,11 +90,14 @@ export function QueueCard({ queue }: Readonly<{ queue: any }>) {
                       {formatDuration(item.track.durationSeconds)}
                     </p>
                   </div>
+                  <Button size="icon" variant="ghost" onClick={() => void run(() => player.play(item.position), "Воспроизведение начато")} disabled={pending} aria-label={`Воспроизвести ${item.track.title}`}>
+                    {pending ? <Loader2 className="animate-spin" /> : <Play />}
+                  </Button>
                   <Button
                     size="icon"
                     variant="ghost"
                     className="opacity-0 transition-opacity group-hover:opacity-100"
-                    onClick={() => queue.removeFromQueue(item.position)}
+                    onClick={() => void run(() => queue.removeFromQueue(item.position), "Трек удалён из очереди")}
                     aria-label={`Удалить ${item.track.title}`}
                   >
                     <X />
