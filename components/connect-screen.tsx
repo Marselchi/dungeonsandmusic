@@ -22,6 +22,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useBackend } from "@/lib/store/backend-context";
+import { ApiClient } from "@/lib/api/client";
 import { ApiError, BackendUnreachableError } from "@/lib/api/errors";
 
 export function ConnectScreen() {
@@ -36,27 +37,29 @@ export function ConnectScreen() {
     setError(null);
     const nextUrl = url.trim().replace(/\/$/, "");
     try {
-      setBackendUrl(nextUrl);
-      const health = await api.health();
+      const nextToken = tokenInput.trim();
+      const nextApi = new ApiClient({ baseUrl: nextUrl, token: nextToken });
+      const health = await nextApi.health();
       if (health.status !== "ok")
-        throw new Error("Backend did not report a healthy status.");
-      setToken(tokenInput.trim());
-      await api.getGuilds();
+        throw new Error("Бэкенд не сообщил о готовности.");
+      await nextApi.getGuilds();
+      setBackendUrl(nextUrl);
+      setToken(nextToken);
     } catch (cause) {
       setToken(null);
       if (cause instanceof ApiError && cause.status === 401)
         setError(
-          "That pairing token was rejected. Copy the token printed by your backend and try again.",
+          "Токен отклонён. Скопируйте токен, напечатанный бэкендом, и попробуйте снова.",
         );
       else if (cause instanceof BackendUnreachableError)
         setError(
-          "The backend could not be reached. Check the URL, CORS origin, and that the bot is running.",
+          "Не удалось подключиться к бэкенду. Проверьте URL, CORS и запущен ли бот.",
         );
       else
         setError(
           cause instanceof Error
             ? cause.message
-            : "We could not complete the connection.",
+            : "Не удалось завершить подключение.",
         );
     } finally {
       setChecking(false);
@@ -77,20 +80,19 @@ export function ConnectScreen() {
               </span>
             </div>
             <h1 className="max-w-xl text-balance text-6xl font-semibold tracking-tight">
-              Your music, <span className="text-primary">in command.</span>
+              Ваша музыка, <span className="text-primary">под контролем.</span>
             </h1>
             <p className="mt-6 max-w-lg text-pretty text-lg leading-8 text-muted-foreground">
-              A focused control room for your Discord music bot. Pair once, then
-              manage servers, channels, queues, and playlists from one calm
-              workspace.
+              Удобная панель управления музыкальным Discord-ботом. Подключитесь один раз и
+              управляйте серверами, каналами, очередью и плейлистами в одном месте.
             </p>
             <div className="mt-10 flex flex-wrap gap-3 text-sm text-muted-foreground">
               <span className="inline-flex items-center gap-2 rounded-full border bg-card px-3 py-2">
-                <ShieldCheck className="size-4 text-primary" /> Local-first
-                pairing
+                <ShieldCheck className="size-4 text-primary" /> Локальное
+                подключение
               </span>
               <span className="inline-flex items-center gap-2 rounded-full border bg-card px-3 py-2">
-                <Server className="size-4 text-primary" /> Live bot status
+                <Server className="size-4 text-primary" /> Статус бота в реальном времени
               </span>
             </div>
           </section>
@@ -101,10 +103,9 @@ export function ConnectScreen() {
                 <Link2 data-icon="inline-start" />
               </div>
               <div>
-                <CardTitle className="text-2xl">Connect your backend</CardTitle>
+                <CardTitle className="text-2xl">Подключение к бэкенду</CardTitle>
                 <CardDescription className="mt-2 leading-6">
-                  Enter the local URL and pairing token printed when your bot
-                  starts.
+                  Введите локальный URL и токен, который выводится при запуске бота.
                 </CardDescription>
               </div>
             </CardHeader>
@@ -112,12 +113,12 @@ export function ConnectScreen() {
               {error && (
                 <Alert variant="destructive">
                   <AlertCircle data-icon="inline-start" />
-                  <AlertTitle>Connection failed</AlertTitle>
+                  <AlertTitle>Ошибка подключения</AlertTitle>
                   <AlertDescription>{error}</AlertDescription>
                 </Alert>
               )}
               <div className="flex flex-col gap-2">
-                <Label htmlFor="backend-url">Backend URL</Label>
+                <Label htmlFor="backend-url">URL бэкенда</Label>
                 <Input
                   id="backend-url"
                   value={url}
@@ -127,12 +128,12 @@ export function ConnectScreen() {
                 />
               </div>
               <div className="flex flex-col gap-2">
-                <Label htmlFor="pairing-token">Pairing token</Label>
+                <Label htmlFor="pairing-token">Токен подключения</Label>
                 <Input
                   id="pairing-token"
                   value={tokenInput}
                   onChange={(event) => setTokenInput(event.target.value)}
-                  placeholder="Paste your local token"
+                  placeholder="Вставьте локальный токен"
                   type="password"
                   autoComplete="current-password"
                 />
@@ -147,11 +148,11 @@ export function ConnectScreen() {
                 ) : (
                   <ArrowRight data-icon="inline-start" />
                 )}{" "}
-                {checking ? "Checking connection…" : "Connect to bot"}
+                {checking ? "Проверка подключения…" : "Подключить бота"}
               </Button>
               <p className="text-center text-xs leading-5 text-muted-foreground">
-                Your URL and token stay in this browser and are sent directly to
-                your backend.
+                URL и токен сохраняются в этом браузере и отправляются напрямую
+                на ваш бэкенд.
               </p>
             </CardContent>
           </Card>
