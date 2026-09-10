@@ -79,9 +79,9 @@ export function QueueCard({ queue, player }: Readonly<{ queue: any; player: any 
               {queue.data.map((item: any) => (
                 <div
                   key={`${item.trackId}-${item.position}`}
-                  className="group flex items-center gap-3 rounded-lg p-2 hover:bg-accent"
+                  className="group flex min-w-0 items-center gap-2 rounded-lg p-2 hover:bg-accent"
                 >
-                  <span className="w-5 text-center font-mono text-xs text-muted-foreground">
+                  <span className="size-5 shrink-0 text-center font-mono text-xs text-muted-foreground">
                     {item.position + 1}
                   </span>
                   <div className="min-w-0 flex-1">
@@ -90,13 +90,13 @@ export function QueueCard({ queue, player }: Readonly<{ queue: any; player: any 
                       {formatDuration(item.track.durationSeconds)}
                     </p>
                   </div>
-                  <Button size="icon" variant="ghost" onClick={() => void run(() => player.play(item.position), "Воспроизведение начато")} disabled={pending} aria-label={`Воспроизвести ${item.track.title}`}>
+                  <Button className="shrink-0" size="icon" variant="ghost" onClick={() => void run(() => player.play(item.position), "Воспроизведение начато")} disabled={pending} aria-label={`Воспроизвести ${item.track.title}`}>
                     {pending ? <Loader2 className="animate-spin" /> : <Play />}
                   </Button>
                   <Button
                     size="icon"
                     variant="ghost"
-                    className="opacity-0 transition-opacity group-hover:opacity-100"
+                    className="shrink-0"
                     onClick={() => void run(() => queue.removeFromQueue(item.position), "Трек удалён из очереди")}
                     aria-label={`Удалить ${item.track.title}`}
                   >

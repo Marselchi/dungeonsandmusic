@@ -1,6 +1,6 @@
 "use client";
 
-import { Loader2, ListMusic, Music2, Plus, Search } from "lucide-react";
+import { Loader2, ListMusic, Music2, Play, Plus, Search } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,7 +16,7 @@ import { useLibraryActions, useLibrarySearch } from "@/lib/store/hooks";
 import { toast } from "sonner";
 import { formatDuration } from "@/components/music-console";
 
-export function LibraryCard({ queue }: Readonly<{ queue: any }>) {
+export function LibraryCard({ queue, player }: Readonly<{ queue: any; player: any }>) {
   const library = useLibrarySearch();
   const actions = useLibraryActions();
   const run = async (action: () => Promise<unknown>, message: string) => {
@@ -29,7 +29,7 @@ export function LibraryCard({ queue }: Readonly<{ queue: any }>) {
           <div>
             <CardTitle>Библиотека</CardTitle>
             <CardDescription>
-              Найдите трек и добавьте его в очередь.
+              Вставьте ссылку, чтобы скачать трек в библиотеку, или найдите его ниже.
             </CardDescription>
           </div>
           <ListMusic className="size-5 text-primary" />
@@ -39,25 +39,30 @@ export function LibraryCard({ queue }: Readonly<{ queue: any }>) {
         <form
           onSubmit={(event) => {
             event.preventDefault();
-            const input = event.currentTarget.elements.namedItem(
-              "query",
-            ) as HTMLInputElement;
-            if (input.value.trim()) void library.search(input.value.trim());
+            const input = event.currentTarget.elements.namedItem("query") as HTMLInputElement;
+            const value = input.value.trim();
+            if (!value) return;
+            if (value.startsWith("http")) {
+              void run(() => actions.download({ url: value }), "Трек скачивается в библиотеку");
+            } else {
+              void library.search(value);
+            }
+            input.value = "";
           }}
           className="flex gap-2"
         >
           <Input
             name="query"
-            placeholder="Название или исполнитель"
+            placeholder="Ссылка или название трека"
             aria-label="Поиск библиотеки"
           />
           <Button type="submit" variant="secondary" disabled={library.loading}>
-            {library.loading ? (
+            {library.loading || actions.loading ? (
               <Loader2 data-icon="inline-start" className="animate-spin" />
             ) : (
               <Search data-icon="inline-start" />
             )}{" "}
-            Найти
+            {actions.loading ? "Скачивание…" : "Найти / скачать"}
           </Button>
         </form>
         {library.error && (
@@ -96,11 +101,10 @@ export function LibraryCard({ queue }: Readonly<{ queue: any }>) {
                     <Button
                       size="icon"
                       variant="ghost"
-                      onClick={() => void run(() => actions.ensure(track.id), "Трек добавлен в библиотеку")}
-                      disabled={actions.loading}
-                      aria-label={`Сохранить ${track.title} в библиотеку`}
+                      onClick={() => void run(() => player.playTrack(track.id), "Воспроизведение начато")}
+                      aria-label={`Воспроизвести ${track.title}`}
                     >
-                      <ListMusic />
+                      <Play />
                     </Button>
                     <Button
                       size="icon"

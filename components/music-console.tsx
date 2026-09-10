@@ -103,7 +103,7 @@ export function MusicConsole() {
             <div className="grid gap-6 p-6 lg:grid-cols-[minmax(0,1.35fr)_minmax(300px,0.65fr)] lg:p-8">
               <div className="flex min-w-0 flex-col gap-6">
                 <NowPlayingCard player={player} queue={queue} />
-                <LibraryCard queue={queue} />
+                <LibraryCard queue={queue} player={player} />
               </div>
               <div className="flex min-w-0 flex-col gap-6">
                 <QueueCard queue={queue} player={player} />
