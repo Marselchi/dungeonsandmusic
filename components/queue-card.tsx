@@ -1,9 +1,106 @@
 "use client";
 import { Plus, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDuration } from "@/components/music-console";
-export function QueueCard({ queue }: { queue: any }) { return <Card><CardHeader><div className="flex items-center justify-between"><div><CardTitle>Очередь</CardTitle><CardDescription>{queue.data?.length ?? 0} треков ожидают</CardDescription></div><Button size="icon" variant="ghost" onClick={() => queue.clearQueue()} aria-label="Очистить очередь"><Trash2 /></Button></div></CardHeader><CardContent className="flex flex-col gap-4"><form onSubmit={(event) => { event.preventDefault(); const input = event.currentTarget.elements.namedItem("queue") as HTMLInputElement; if (!input.value.trim()) return; void queue.addToQueue(input.value.trim().startsWith("http") ? { url: input.value.trim() } : { query: input.value.trim() }); input.value = ""; }} className="flex gap-2"><Input name="queue" placeholder="Ссылка или поиск" aria-label="Добавить в очередь" /><Button type="submit" size="icon" aria-label="Добавить в очередь"><Plus /></Button></form><ScrollArea className="h-72">{queue.loading ? <div className="flex flex-col gap-3"><Skeleton className="h-12" /><Skeleton className="h-12" /><Skeleton className="h-12" /></div> : queue.data?.length ? <div className="flex flex-col gap-1">{queue.data.map((item: any) => <div key={`${item.trackId}-${item.position}`} className="group flex items-center gap-3 rounded-lg p-2 hover:bg-accent"><span className="w-5 text-center font-mono text-xs text-muted-foreground">{item.position + 1}</span><div className="min-w-0 flex-1"><p className="truncate text-sm">{item.track.title}</p><p className="text-xs text-muted-foreground">{formatDuration(item.track.durationSeconds)}</p></div><Button size="icon" variant="ghost" className="opacity-0 transition-opacity group-hover:opacity-100" onClick={() => queue.removeFromQueue(item.position)} aria-label={`Удалить ${item.track.title}`}><X /></Button></div>)}</div> : <div className="flex h-full items-center justify-center text-sm text-muted-foreground">Очередь пуста.</div>}</ScrollArea></CardContent></Card>; }
+export function QueueCard({ queue }: Readonly<{ queue: any }>) {
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle>Очередь</CardTitle>
+            <CardDescription>
+              {queue.data?.length ?? 0} треков ожидают
+            </CardDescription>
+          </div>
+          <Button
+            size="icon"
+            variant="ghost"
+            onClick={() => queue.clearQueue()}
+            aria-label="Очистить очередь"
+          >
+            <Trash2 />
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-4">
+        <form
+          onSubmit={(event) => {
+            event.preventDefault();
+            const input = event.currentTarget.elements.namedItem(
+              "queue",
+            ) as HTMLInputElement;
+            if (!input.value.trim()) return;
+            void queue.addToQueue(
+              input.value.trim().startsWith("http")
+                ? { url: input.value.trim() }
+                : { query: input.value.trim() },
+            );
+            input.value = "";
+          }}
+          className="flex gap-2"
+        >
+          <Input
+            name="queue"
+            placeholder="Ссылка или поиск"
+            aria-label="Добавить в очередь"
+          />
+          <Button type="submit" size="icon" aria-label="Добавить в очередь">
+            <Plus />
+          </Button>
+        </form>
+        <ScrollArea className="h-72">
+          {queue.loading ? (
+            <div className="flex flex-col gap-3">
+              <Skeleton className="h-12" />
+              <Skeleton className="h-12" />
+              <Skeleton className="h-12" />
+            </div>
+          ) : queue.data?.length ? (
+            <div className="flex flex-col gap-1">
+              {queue.data.map((item: any) => (
+                <div
+                  key={`${item.trackId}-${item.position}`}
+                  className="group flex items-center gap-3 rounded-lg p-2 hover:bg-accent"
+                >
+                  <span className="w-5 text-center font-mono text-xs text-muted-foreground">
+                    {item.position + 1}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm">{item.track.title}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {formatDuration(item.track.durationSeconds)}
+                    </p>
+                  </div>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="opacity-0 transition-opacity group-hover:opacity-100"
+                    onClick={() => queue.removeFromQueue(item.position)}
+                    aria-label={`Удалить ${item.track.title}`}
+                  >
+                    <X />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+              Очередь пуста.
+            </div>
+          )}
+        </ScrollArea>
+      </CardContent>
+    </Card>
+  );
+}

@@ -1,12 +1,23 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Disc3, LogOut, Radio, Server, Wifi } from "lucide-react";
+import { Radio, Server } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useBackend } from "@/lib/store/backend-context";
-import { useChannels, useDownloadProgress, useGuilds, usePlayerState, useQueue } from "@/lib/store/hooks";
+import {
+  useChannels,
+  useDownloadProgress,
+  useGuilds,
+  usePlayerState,
+  useQueue,
+} from "@/lib/store/hooks";
 import { MusicSidebar } from "@/components/music-sidebar";
 import { NowPlayingCard } from "@/components/now-playing-card";
 import { LibraryCard } from "@/components/library-card";
@@ -19,7 +30,10 @@ export function MusicConsole() {
   const { setToken, socketStatus } = useBackend();
   const guilds = useGuilds();
   const [guildId, setGuildId] = useState<string | null>(null);
-  const selectedGuild = useMemo(() => guilds.data?.find((guild) => guild.id === guildId), [guilds.data, guildId]);
+  const selectedGuild = useMemo(
+    () => guilds.data?.find((guild) => guild.id === guildId),
+    [guilds.data, guildId],
+  );
   const channels = useChannels(guildId);
   const player = usePlayerState(guildId);
   const queue = useQueue(guildId);
@@ -27,20 +41,77 @@ export function MusicConsole() {
 
   return (
     <main className="min-h-screen bg-background text-foreground">
-      <div className="mx-auto flex min-h-screen max-w-[1500px] flex-col lg:flex-row">
-        <MusicSidebar guilds={guilds} guildId={guildId} onSelectGuild={setGuildId} socketStatus={socketStatus} onDisconnect={() => setToken(null)} />
+      <div className="mx-auto flex min-h-screen max-w-375 flex-col lg:flex-row">
+        <MusicSidebar
+          guilds={guilds}
+          guildId={guildId}
+          onSelectGuild={setGuildId}
+          socketStatus={socketStatus}
+          onDisconnect={() => setToken(null)}
+        />
         <section className="flex min-w-0 flex-1 flex-col">
           <header className="flex flex-wrap items-center justify-between gap-4 border-b px-6 py-5 lg:px-8">
-            <div><p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Пульт управления</p><h1 className="mt-1 text-2xl font-semibold tracking-tight">{selectedGuild?.name ?? "Выберите сервер"}</h1></div>
+            <div>
+              <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                Пульт управления
+              </p>
+              <h1 className="mt-1 text-2xl font-semibold tracking-tight">
+                {selectedGuild?.name ?? "Выберите сервер"}
+              </h1>
+            </div>
             <div className="flex items-center gap-3">
               <Select value={guildId ?? ""} onValueChange={setGuildId}>
-                <SelectTrigger className="w-52"><Server data-icon="inline-start" /><SelectValue placeholder="Выбрать сервер" /></SelectTrigger>
-                <SelectContent>{guilds.data?.map((guild) => <SelectItem key={guild.id} value={guild.id}>{guild.name}</SelectItem>)}</SelectContent>
+                <SelectTrigger className="w-52">
+                  <Server data-icon="inline-start" />
+                  <SelectValue placeholder="Выбрать сервер" />
+                </SelectTrigger>
+                <SelectContent>
+                  {guilds.data?.map((guild) => (
+                    <SelectItem key={guild.id} value={guild.id}>
+                      {guild.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
               </Select>
-              <Badge variant="outline" className="hidden gap-2 py-1.5 sm:inline-flex"><span className={`size-1.5 rounded-full ${socketStatus === "open" ? "bg-primary" : "bg-muted-foreground"}`} />{socketStatus === "open" ? "Онлайн" : "Офлайн"}</Badge>
+              <Badge
+                variant="outline"
+                className="hidden gap-2 py-1.5 sm:inline-flex"
+              >
+                <span
+                  className={`size-1.5 rounded-full ${socketStatus === "open" ? "bg-primary" : "bg-muted-foreground"}`}
+                />
+                {socketStatus === "open" ? "Онлайн" : "Офлайн"}
+              </Badge>
             </div>
           </header>
-          {!guildId ? <div className="flex flex-1 items-center justify-center p-8"><div className="max-w-md text-center"><div className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-primary/10 text-primary"><Radio data-icon="inline-start" /></div><h2 className="mt-5 text-xl font-semibold">Выберите сервер, чтобы начать</h2><p className="mt-2 leading-6 text-muted-foreground">Выберите Discord-сервер в боковой панели, затем голосовой канал для управления музыкой.</p></div></div> : <div className="grid gap-6 p-6 lg:grid-cols-[minmax(0,1.35fr)_minmax(300px,0.65fr)] lg:p-8"><div className="flex min-w-0 flex-col gap-6"><NowPlayingCard player={player} queue={queue} /><LibraryCard queue={queue} /></div><div className="flex min-w-0 flex-col gap-6"><QueueCard queue={queue} /><VoiceChannelCard channels={channels} player={player} /><PlaylistsCard /></div></div>}
+          {!guildId ? (
+            <div className="flex flex-1 items-center justify-center p-8">
+              <div className="max-w-md text-center">
+                <div className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                  <Radio data-icon="inline-start" />
+                </div>
+                <h2 className="mt-5 text-xl font-semibold">
+                  Выберите сервер, чтобы начать
+                </h2>
+                <p className="mt-2 leading-6 text-muted-foreground">
+                  Выберите Discord-сервер в боковой панели, затем голосовой
+                  канал для управления музыкой.
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="grid gap-6 p-6 lg:grid-cols-[minmax(0,1.35fr)_minmax(300px,0.65fr)] lg:p-8">
+              <div className="flex min-w-0 flex-col gap-6">
+                <NowPlayingCard player={player} queue={queue} />
+                <LibraryCard queue={queue} />
+              </div>
+              <div className="flex min-w-0 flex-col gap-6">
+                <QueueCard queue={queue} />
+                <VoiceChannelCard channels={channels} player={player} />
+                <PlaylistsCard />
+              </div>
+            </div>
+          )}
         </section>
       </div>
       <DownloadProgress progress={progress} />
@@ -48,4 +119,7 @@ export function MusicConsole() {
   );
 }
 
-export function formatDuration(seconds: number | null) { if (seconds == null) return "—"; return `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, "0")}`; }
+export function formatDuration(seconds: number | null) {
+  if (seconds == null) return "—";
+  return `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, "0")}`;
+}

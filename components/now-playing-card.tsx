@@ -3,9 +3,96 @@
 import { Disc3, Pause, Play, SkipForward, Volume2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
 import { formatDuration } from "@/components/music-console";
 
 type Props = { player: any; queue: any };
-export function NowPlayingCard({ player, queue }: Props) { const currentTrack = player.data?.currentTrackId ? queue.data?.find((item: any) => item.trackId === player.data.currentTrackId)?.track : null; return <Card className="overflow-hidden"><CardHeader className="flex flex-row items-start justify-between gap-4"><div><CardDescription>Сейчас играет</CardDescription><CardTitle className="mt-1 text-2xl">{currentTrack?.title ?? "Очередь пуста"}</CardTitle></div><Badge variant={player.data?.state === "playing" ? "default" : "secondary"}>{player.data?.state === "playing" ? "Играет" : "Пауза"}</Badge></CardHeader><CardContent><div className="flex flex-col gap-5 sm:flex-row sm:items-center"><div className="flex size-28 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-muted">{currentTrack?.thumbnailUrl ? <img src={currentTrack.thumbnailUrl} alt="" className="size-full object-cover" /> : <Disc3 className="size-10 text-muted-foreground" />}</div><div className="min-w-0 flex-1"><p className="truncate font-medium">{currentTrack?.title ?? "Выберите трек в библиотеке"}</p><p className="mt-1 text-sm text-muted-foreground">{currentTrack ? formatDuration(currentTrack.durationSeconds) : "Готово к воспроизведению"}</p><div className="mt-5 flex items-center gap-2"><Button size="icon" variant="outline" onClick={() => player.skip()} disabled={!player.data}><SkipForward /></Button><Button size="icon" onClick={() => player.data?.state === "playing" ? player.pause() : player.resume()} disabled={!player.data}>{player.data?.state === "playing" ? <Pause /> : <Play />}</Button><div className="ml-auto flex w-32 items-center gap-2"><Volume2 className="size-4 text-muted-foreground" /><Slider value={[Math.round((player.data?.volume ?? 1) * 100)]} max={100} step={1} onValueChange={(value: number[]) => player.setVolume((value[0] ?? 0) / 100)} aria-label="Громкость" /></div></div></div></div></CardContent></Card>; }
+export function NowPlayingCard({ player, queue }: Readonly<Props>) {
+  const currentTrack = player.data?.currentTrackId
+    ? queue.data?.find(
+        (item: any) => item.trackId === player.data.currentTrackId,
+      )?.track
+    : null;
+  return (
+    <Card className="overflow-hidden">
+      <CardHeader className="flex flex-row items-start justify-between gap-4">
+        <div>
+          <CardDescription>Сейчас играет</CardDescription>
+          <CardTitle className="mt-1 text-2xl">
+            {currentTrack?.title ?? "Очередь пуста"}
+          </CardTitle>
+        </div>
+        <Badge
+          variant={player.data?.state === "playing" ? "default" : "secondary"}
+        >
+          {player.data?.state === "playing" ? "Играет" : "Пауза"}
+        </Badge>
+      </CardHeader>
+      <CardContent>
+        <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
+          <div className="flex size-28 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-muted">
+            {currentTrack?.thumbnailUrl ? (
+              <img
+                src={currentTrack.thumbnailUrl}
+                alt=""
+                className="size-full object-cover"
+              />
+            ) : (
+              <Disc3 className="size-10 text-muted-foreground" />
+            )}
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="truncate font-medium">
+              {currentTrack?.title ?? "Выберите трек в библиотеке"}
+            </p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {currentTrack
+                ? formatDuration(currentTrack.durationSeconds)
+                : "Готово к воспроизведению"}
+            </p>
+            <div className="mt-5 flex items-center gap-2">
+              <Button
+                size="icon"
+                variant="outline"
+                onClick={() => player.skip()}
+                disabled={!player.data}
+              >
+                <SkipForward />
+              </Button>
+              <Button
+                size="icon"
+                onClick={() =>
+                  player.data?.state === "playing"
+                    ? player.pause()
+                    : player.resume()
+                }
+                disabled={!player.data}
+              >
+                {player.data?.state === "playing" ? <Pause /> : <Play />}
+              </Button>
+              <div className="ml-auto flex w-32 items-center gap-2">
+                <Volume2 className="size-4 text-muted-foreground" />
+                <Slider
+                  value={[Math.round((player.data?.volume ?? 1) * 100)]}
+                  max={100}
+                  step={1}
+                  onValueChange={(value: number[]) =>
+                    player.setVolume((value[0] ?? 0) / 100)
+                  }
+                  aria-label="Громкость"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
