@@ -20,7 +20,13 @@ export function LibraryCard({ queue, player }: Readonly<{ queue: any; player: an
   const library = useLibrarySearch();
   const actions = useLibraryActions();
   const run = async (action: () => Promise<unknown>, message: string) => {
-    try { await action(); toast.success(message); } catch (error) { toast.error((error as Error).message); }
+    const toastId = toast.loading("Выполняется…");
+    try {
+      await action();
+      toast.success(message, { id: toastId });
+    } catch (error) {
+      toast.error((error as Error).message, { id: toastId });
+    }
   };
   return (
     <Card>
