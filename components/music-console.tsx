@@ -1,9 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Radio, Server } from "lucide-react";
+import { LogOut, Radio, Server } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -26,7 +27,7 @@ import { VoiceChannelCard } from "@/components/voice-channel-card";
 import { DownloadProgress } from "@/components/download-progress";
 
 export function MusicConsole() {
-  const { socketStatus } = useBackend();
+  const { setToken, socketStatus } = useBackend();
   const guilds = useGuilds();
   const [guildId, setGuildId] = useState<string | null>(null);
   const selectedGuild = useMemo(
@@ -76,6 +77,16 @@ export function MusicConsole() {
                   ))}
                 </SelectContent>
               </Select>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setToken(null)}
+                aria-label="Отключиться"
+              >
+                <LogOut data-icon="inline-start" />
+                Отключиться
+              </Button>
               <Badge
                 variant="outline"
                 className="hidden gap-2 py-1.5 sm:inline-flex"
@@ -117,7 +128,7 @@ export function MusicConsole() {
           )}
         </section>
       </div>
-      <DownloadProgress progress={progress} />
+      <DownloadProgress progress={progress.jobs} onDismiss={progress.dismiss} />
     </main>
   );
 }

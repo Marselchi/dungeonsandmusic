@@ -384,9 +384,24 @@ export function useDownloadProgress() {
   useEffect(() => {
     if (!socket) return;
     return socket.on("download.progress", (payload) => {
-      setJobs((prev) => ({ ...prev, [payload.jobId]: { done: payload.done, total: payload.total } }));
+      setJobs((prev) => {
+        if (payload.total > 0 && payload.done >= payload.total) {
+          const next = { ...prev };
+          delete next[payload.jobId];
+          return next;
+        }
+        return { ...prev, [payload.jobId]: { done: payload.done, total: payload.total } };
+      });
     });
   }, [socket]);
 
-  return jobs;
+  const dismiss = useCallback((jobId: string) => {
+    setJobs((prev) => {
+      const next = { ...prev };
+      delete next[jobId];
+      return next;
+    });
+  }, []);
+
+  return { jobs, dismiss };
 }

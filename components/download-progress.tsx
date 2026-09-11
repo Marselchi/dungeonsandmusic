@@ -1,8 +1,12 @@
+import { X } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
 export function DownloadProgress({
   progress,
+  onDismiss,
 }: Readonly<{
   progress: Record<string, { done: number; total: number }>;
+  onDismiss?: (jobId: string) => void;
 }>) {
   return (
     <>
@@ -13,9 +17,20 @@ export function DownloadProgress({
         >
           <div className="flex items-center justify-between text-sm">
             <span>Загрузка трека</span>
-            <span className="text-muted-foreground">
-              {job.done}/{job.total}
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="text-muted-foreground">
+                {job.done}/{job.total}
+              </span>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => onDismiss?.(jobId)}
+                aria-label="Закрыть уведомление о загрузке"
+              >
+                <X />
+              </Button>
+            </div>
           </div>
           <Progress
             value={job.total ? (job.done / job.total) * 100 : 0}
