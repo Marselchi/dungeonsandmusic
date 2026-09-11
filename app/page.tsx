@@ -1,9 +1,10 @@
+"use client";
+
+import { useBackend } from "@/lib/store/backend-context";
+import { ConnectScreen } from "@/components/connect-screen";
+import { MusicConsole } from "@/components/music-console";
+
 export default function Home() {
-  return (
-    <main>
-      {/* Intentionally unstyled placeholder — no UI has been built yet.
-          See UI_GUIDE.md for the hooks/types/components to build this from. */}
-      API scaffold ready. No UI has been built yet — see UI_GUIDE.md.
-    </main>
-  );
+  const { isPaired } = useBackend();
+  return isPaired ? <MusicConsole /> : <ConnectScreen />;
 }

@@ -101,8 +101,12 @@ export class ApiClient {
     return this.get(`/api/player/${encodeURIComponent(guildId)}`);
   }
 
-  play(guildId: string): Promise<{ ok: true }> {
-    return this.post(`/api/player/${encodeURIComponent(guildId)}/play`);
+  play(guildId: string, position?: number): Promise<{ ok: true }> {
+    return this.post(`/api/player/${encodeURIComponent(guildId)}/play`, position == null ? undefined : { position });
+  }
+
+  playAdhoc(guildId: string, trackId: string): Promise<{ ok: true }> {
+    return this.post(`/api/player/${encodeURIComponent(guildId)}/play-adhoc`, { trackId });
   }
 
   pause(guildId: string): Promise<{ ok: true }> {
@@ -115,6 +119,10 @@ export class ApiClient {
 
   skip(guildId: string): Promise<{ ok: true }> {
     return this.post(`/api/player/${encodeURIComponent(guildId)}/skip`);
+  }
+
+  setRepeat(guildId: string, enabled: boolean): Promise<{ ok: true; enabled: boolean }> {
+    return this.post(`/api/player/${encodeURIComponent(guildId)}/repeat`, { enabled });
   }
 
   /** Accepted by the backend but currently a no-op server-side — see doc.md. */
@@ -190,6 +198,14 @@ export class ApiClient {
   searchLibrary(query: string): Promise<{ tracks: Track[] }> {
     const q = encodeURIComponent(query);
     return this.get(`/api/library/search?q=${q}`);
+  }
+
+  downloadLibrary(body: { url?: string; query?: string }): Promise<{ jobId?: string; trackId?: string; track?: Track }> {
+    return this.post("/api/library/download", body);
+  }
+
+  ensureLibraryTrack(trackId: string): Promise<{ ok: true; trackId: string; track?: Track }> {
+    return this.post(`/api/library/${encodeURIComponent(trackId)}`);
   }
 
   /** Requires `musicFolder` to be set in the backend's config.json. */

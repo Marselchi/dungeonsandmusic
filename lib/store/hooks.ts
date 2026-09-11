@@ -129,7 +129,12 @@ export function useQueue(guildId: string | null) {
 export function usePlayerState(guildId: string | null) {
   const { api, socket } = useBackend();
   const [state, setState] = useState<AsyncState<PlayerState>>(INITIAL_STATE);
+  const [voiceChannelId, setVoiceChannelId] = useState<string | null>(null);
   useGuildSubscription(guildId);
+
+  useEffect(() => {
+    setVoiceChannelId(null);
+  }, [guildId]);
 
   const refetch = useCallback(async () => {
     if (!guildId) return;
@@ -166,17 +171,54 @@ export function usePlayerState(guildId: string | null) {
     });
   }, [socket, guildId, refetch]);
 
+  useEffect(() => {
+    if (!socket || !guildId) return;
+    return socket.on("player.positionChanged", (payload) => {
+      if (payload.guildId !== guildId) return;
+      setState((current) => current.data ? { ...current, data: { ...current.data, positionSeconds: payload.positionSeconds, durationSeconds: payload.durationSeconds, updatedAt: payload.updatedAt } } : current);
+    });
+  }, [socket, guildId]);
+
+  useEffect(() => {
+    if (!socket || !guildId) return;
+    const refresh = () => refetch();
+    const cleanups = [
+      socket.on("voice.connected", (payload) => {
+        if (payload.guildId === guildId) {
+          setVoiceChannelId(payload.channelId);
+          refresh();
+        }
+      }),
+      socket.on("voice.disconnected", (payload) => {
+        if (payload.guildId === guildId) {
+          setVoiceChannelId(null);
+          refresh();
+        }
+      }),
+    ];
+    return () => cleanups.forEach((cleanup) => cleanup());
+  }, [socket, guildId, refetch]);
+
   const guard = <T,>(fn: (id: string) => Promise<T>) => (guildId ? fn(guildId) : Promise.reject(new Error("No guild selected")));
 
   return {
     ...state,
     refetch,
-    join: (channelId: string) => guard((id) => api.joinVoiceChannel(id, channelId)),
-    leave: () => guard((id) => api.leaveVoiceChannel(id)),
-    play: () => guard((id) => api.play(id)),
+    voiceChannelId,
+    join: async (channelId: string) => {
+      await guard((id) => api.joinVoiceChannel(id, channelId));
+      setVoiceChannelId(channelId);
+    },
+    leave: async () => {
+      await guard((id) => api.leaveVoiceChannel(id));
+      setVoiceChannelId(null);
+    },
+    play: (position?: number) => guard((id) => api.play(id, position)),
+    playAdhoc: (trackId: string) => guard((id) => api.playAdhoc(id, trackId)),
     pause: () => guard((id) => api.pause(id)),
     resume: () => guard((id) => api.resume(id)),
     skip: () => guard((id) => api.skip(id)),
+    setRepeat: (enabled: boolean) => guard((id) => api.setRepeat(id, enabled)),
     seek: (seconds: number) => guard((id) => api.seek(id, seconds)),
     setVolume: (level: number) => guard((id) => api.setVolume(id, level)),
   };
@@ -321,6 +363,20 @@ export function useLibrarySearch() {
 }
 
 /** Tracks in-progress scan/download jobs by id, fed entirely by `download.progress` events. */
+export function useLibraryActions() {
+  const { api } = useBackend();
+  const [loading, setLoading] = useState(false);
+  const download = useCallback(async (body: { url?: string; query?: string }) => {
+    setLoading(true);
+    try { return await api.downloadLibrary(body); } finally { setLoading(false); }
+  }, [api]);
+  const ensure = useCallback(async (trackId: string) => {
+    setLoading(true);
+    try { return await api.ensureLibraryTrack(trackId); } finally { setLoading(false); }
+  }, [api]);
+  return { loading, download, ensure };
+}
+
 export function useDownloadProgress() {
   const { socket } = useBackend();
   const [jobs, setJobs] = useState<Record<string, { done: number; total: number }>>({});
