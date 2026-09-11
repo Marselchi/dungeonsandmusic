@@ -34,6 +34,7 @@ export interface PlayerState {
   positionSeconds: number;
   durationSeconds: number | null;
   updatedAt: number;
+  repeat: boolean;
   volume: number; // 0.0 - 2.0, 1.0 = default
 }
 

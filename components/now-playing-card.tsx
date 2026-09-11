@@ -1,6 +1,6 @@
 "use client";
 
-import { Disc3, Pause, Play, SkipForward, Volume2 } from "lucide-react";
+import { Disc3, Pause, Play, Repeat2, SkipForward } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -10,7 +10,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Slider } from "@/components/ui/slider";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { formatDuration } from "@/components/music-console";
@@ -28,6 +27,7 @@ export function NowPlayingCard({ player, queue }: Readonly<Props>) {
   const run = async (action: () => Promise<unknown>, success: string) => {
     try { await action(); toast.success(success); await player.refetch(); } catch (error) { toast.error((error as Error).message); }
   };
+  const repeatEnabled = player.data?.repeat ?? false;
 
   return (
     <Card className="overflow-hidden">
@@ -76,6 +76,16 @@ export function NowPlayingCard({ player, queue }: Readonly<Props>) {
               </Button>
               <Button
                 size="icon"
+                variant={repeatEnabled ? "default" : "outline"}
+                onClick={() => void run(() => player.setRepeat(!repeatEnabled), repeatEnabled ? "Повтор выключен" : "Повтор включен")}
+                disabled={!player.data}
+                aria-pressed={repeatEnabled}
+                aria-label="Зациклить текущий трек"
+              >
+                <Repeat2 />
+              </Button>
+              <Button
+                size="icon"
                 onClick={() =>
                   player.data?.state === "playing"
                     ? void run(() => player.pause(), "Пауза включена")
@@ -85,18 +95,7 @@ export function NowPlayingCard({ player, queue }: Readonly<Props>) {
               >
                 {player.data?.state === "playing" ? <Pause /> : <Play />}
               </Button>
-              <div className="ml-auto flex w-32 items-center gap-2">
-                <Volume2 className="size-4 text-muted-foreground" />
-                <Slider
-                  value={[Math.round((player.data?.volume ?? 1) * 100)]}
-                  max={100}
-                  step={1}
-                  onValueChange={(value: number[]) =>
-                    player.setVolume((value[0] ?? 0) / 100)
-                  }
-                  aria-label="Громкость"
-                />
-              </div>
+
             </div>
           </div>
         </div>

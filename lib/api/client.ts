@@ -121,6 +121,10 @@ export class ApiClient {
     return this.post(`/api/player/${encodeURIComponent(guildId)}/skip`);
   }
 
+  setRepeat(guildId: string, enabled: boolean): Promise<{ ok: true; enabled: boolean }> {
+    return this.post(`/api/player/${encodeURIComponent(guildId)}/repeat`, { enabled });
+  }
+
   /** Accepted by the backend but currently a no-op server-side — see doc.md. */
   seek(guildId: string, seconds: number): Promise<{ ok: true }> {
     return this.post(`/api/player/${encodeURIComponent(guildId)}/seek`, { seconds });

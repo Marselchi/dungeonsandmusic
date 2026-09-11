@@ -218,6 +218,7 @@ export function usePlayerState(guildId: string | null) {
     pause: () => guard((id) => api.pause(id)),
     resume: () => guard((id) => api.resume(id)),
     skip: () => guard((id) => api.skip(id)),
+    setRepeat: (enabled: boolean) => guard((id) => api.setRepeat(id, enabled)),
     seek: (seconds: number) => guard((id) => api.seek(id, seconds)),
     setVolume: (level: number) => guard((id) => api.setVolume(id, level)),
   };

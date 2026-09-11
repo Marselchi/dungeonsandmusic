@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { Radio, Server } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import {
   Select,
@@ -18,7 +19,6 @@ import {
   usePlayerState,
   useQueue,
 } from "@/lib/store/hooks";
-import { MusicSidebar } from "@/components/music-sidebar";
 import { NowPlayingCard } from "@/components/now-playing-card";
 import { LibraryCard } from "@/components/library-card";
 import { QueueCard } from "@/components/queue-card";
@@ -27,7 +27,7 @@ import { PlaylistsCard } from "@/components/playlists-card";
 import { DownloadProgress } from "@/components/download-progress";
 
 export function MusicConsole() {
-  const { setToken, socketStatus } = useBackend();
+  const { socketStatus } = useBackend();
   const guilds = useGuilds();
   const [guildId, setGuildId] = useState<string | null>(null);
   const selectedGuild = useMemo(
@@ -42,13 +42,6 @@ export function MusicConsole() {
   return (
     <main className="min-h-screen bg-background text-foreground">
       <div className="mx-auto flex min-h-screen max-w-375 flex-col lg:flex-row">
-        <MusicSidebar
-          guilds={guilds}
-          guildId={guildId}
-          onSelectGuild={setGuildId}
-          socketStatus={socketStatus}
-          onDisconnect={() => setToken(null)}
-        />
         <section className="flex min-w-0 flex-1 flex-col">
           <header className="flex flex-wrap items-center justify-between gap-4 border-b px-6 py-5 lg:px-8">
             <div>
@@ -61,14 +54,27 @@ export function MusicConsole() {
             </div>
             <div className="flex items-center gap-3">
               <Select value={guildId ?? ""} onValueChange={setGuildId}>
-                <SelectTrigger className="w-52">
-                  <Server data-icon="inline-start" />
+                <SelectTrigger className="w-64">
+                  {selectedGuild ? (
+                    <Avatar className="size-5">
+                      <AvatarImage src={selectedGuild.iconUrl ?? undefined} alt="" />
+                      <AvatarFallback>{selectedGuild.name.slice(0, 2).toUpperCase()}</AvatarFallback>
+                    </Avatar>
+                  ) : (
+                    <Server data-icon="inline-start" />
+                  )}
                   <SelectValue placeholder="Выбрать сервер" />
                 </SelectTrigger>
                 <SelectContent>
                   {guilds.data?.map((guild) => (
                     <SelectItem key={guild.id} value={guild.id}>
-                      {guild.name}
+                      <span className="flex items-center gap-2">
+                        <Avatar className="size-5">
+                          <AvatarImage src={guild.iconUrl ?? undefined} alt="" />
+                          <AvatarFallback>{guild.name.slice(0, 2).toUpperCase()}</AvatarFallback>
+                        </Avatar>
+                        <span className="truncate">{guild.name}</span>
+                      </span>
                     </SelectItem>
                   ))}
                 </SelectContent>
