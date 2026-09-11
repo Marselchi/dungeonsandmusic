@@ -105,8 +105,8 @@ export class ApiClient {
     return this.post(`/api/player/${encodeURIComponent(guildId)}/play`, position == null ? undefined : { position });
   }
 
-  playTrack(guildId: string, trackId: string): Promise<{ ok: true }> {
-    return this.post(`/api/player/${encodeURIComponent(guildId)}/play-track`, { trackId });
+  playAdhoc(guildId: string, trackId: string): Promise<{ ok: true }> {
+    return this.post(`/api/player/${encodeURIComponent(guildId)}/play-adhoc`, { trackId });
   }
 
   pause(guildId: string): Promise<{ ok: true }> {

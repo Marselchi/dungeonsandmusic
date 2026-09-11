@@ -101,7 +101,7 @@ export function LibraryCard({ queue, player }: Readonly<{ queue: any; player: an
                     <Button
                       size="icon"
                       variant="ghost"
-                      onClick={() => void run(() => player.playTrack(track.id), "Воспроизведение начато")}
+                      onClick={() => void run(() => player.playAdhoc(track.id), "Воспроизведение начато")}
                       aria-label={`Воспроизвести ${track.title}`}
                     >
                       <Play />

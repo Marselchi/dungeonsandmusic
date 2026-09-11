@@ -214,7 +214,7 @@ export function usePlayerState(guildId: string | null) {
       setVoiceChannelId(null);
     },
     play: (position?: number) => guard((id) => api.play(id, position)),
-    playTrack: (trackId: string) => guard((id) => api.playTrack(id, trackId)),
+    playAdhoc: (trackId: string) => guard((id) => api.playAdhoc(id, trackId)),
     pause: () => guard((id) => api.pause(id)),
     resume: () => guard((id) => api.resume(id)),
     skip: () => guard((id) => api.skip(id)),
