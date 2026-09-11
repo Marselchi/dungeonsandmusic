@@ -23,7 +23,6 @@ import { NowPlayingCard } from "@/components/now-playing-card";
 import { LibraryCard } from "@/components/library-card";
 import { QueueCard } from "@/components/queue-card";
 import { VoiceChannelCard } from "@/components/voice-channel-card";
-import { PlaylistsCard } from "@/components/playlists-card";
 import { DownloadProgress } from "@/components/download-progress";
 
 export function MusicConsole() {
@@ -55,14 +54,7 @@ export function MusicConsole() {
             <div className="flex items-center gap-3">
               <Select value={guildId ?? ""} onValueChange={setGuildId}>
                 <SelectTrigger className="w-64">
-                  {selectedGuild ? (
-                    <Avatar className="size-5">
-                      <AvatarImage src={selectedGuild.iconUrl ?? undefined} alt="" />
-                      <AvatarFallback>{selectedGuild.name.slice(0, 2).toUpperCase()}</AvatarFallback>
-                    </Avatar>
-                  ) : (
-                    <Server data-icon="inline-start" />
-                  )}
+                  {<Server data-icon="inline-start" />}
                   <SelectValue placeholder="Выбрать сервер" />
                 </SelectTrigger>
                 <SelectContent>
@@ -70,8 +62,13 @@ export function MusicConsole() {
                     <SelectItem key={guild.id} value={guild.id}>
                       <span className="flex items-center gap-2">
                         <Avatar className="size-5">
-                          <AvatarImage src={guild.iconUrl ?? undefined} alt="" />
-                          <AvatarFallback>{guild.name.slice(0, 2).toUpperCase()}</AvatarFallback>
+                          <AvatarImage
+                            src={guild.iconUrl ?? undefined}
+                            alt=""
+                          />
+                          <AvatarFallback>
+                            {guild.name.slice(0, 2).toUpperCase()}
+                          </AvatarFallback>
                         </Avatar>
                         <span className="truncate">{guild.name}</span>
                       </span>
@@ -114,7 +111,7 @@ export function MusicConsole() {
               <div className="flex min-w-0 flex-col gap-6">
                 <QueueCard queue={queue} player={player} />
                 <VoiceChannelCard channels={channels} player={player} />
-                <PlaylistsCard />
+                {/*<PlaylistsCard />*/}
               </div>
             </div>
           )}
