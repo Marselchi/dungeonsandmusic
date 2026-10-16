@@ -38,9 +38,14 @@ export function SystemUpdateBanner() {
     const toastId = toast.loading("Обновление yt-dlp…");
     try {
       const res = await updateYtdlp();
-      toast.success("yt-dlp успешно обновлен!", { id: toastId, description: res.output });
+      toast.success("yt-dlp успешно обновлен!", {
+        id: toastId,
+        description: res.output,
+      });
     } catch (err) {
-      toast.error(`Не удалось обновить yt-dlp: ${(err as Error).message}`, { id: toastId });
+      toast.error(`Не удалось обновить yt-dlp: ${(err as Error).message}`, {
+        id: toastId,
+      });
     }
   };
 
@@ -64,7 +69,8 @@ export function SystemUpdateBanner() {
                   </span>
                 </div>
                 <p className="mt-0.5 text-xs text-muted-foreground">
-                  Старая версия бота может перестать воспроизводить музыку из-за изменений YouTube. Обновите бот для стабильной работы.
+                  Старая версия бота может перестать воспроизводить музыку из-за
+                  изменений YouTube. Обновите бот для стабильной работы.
                 </p>
               </div>
             </div>
@@ -87,7 +93,10 @@ export function SystemUpdateBanner() {
                 asChild
               >
                 <a
-                  href={data.bot?.releaseUrl ?? "https://github.com/Marselchi/discord-music-bot/releases"}
+                  href={
+                    data.bot?.releaseUrl ??
+                    "https://github.com/Marselchi/discord-music-bot/releases"
+                  }
                   target="_blank"
                   rel="noreferrer"
                 >
@@ -140,38 +149,64 @@ export function SystemUpdateBanner() {
                       Обновление с версии 0.1.0 (текущая версия)
                     </p>
                     <p className="text-xs leading-relaxed">
-                      В версии 0.1.0 еще не было встроенного автообновления, поэтому этот первый переход делается вручную за 1 минуту:
+                      В версии 0.1.0 еще не было встроенного автообновления,
+                      поэтому этот первый переход делается вручную за 1 минуту:
                     </p>
                     <ol className="list-decimal pl-4 text-xs leading-relaxed space-y-1">
-                      <li>Остановите текущего бота в консоли (<kbd className="rounded bg-muted px-1 font-mono">Ctrl+C</kbd>).</li>
-                      <li>Нажмите <strong>«Скачать обновление»</strong> ниже и скачайте архив для вашей системы (например, <code className="rounded bg-muted px-1">discord-music-bot-windows-x64.zip</code>).</li>
-                      <li>Замените файл <code className="rounded bg-muted px-1">bot-server.exe</code> (и <code className="rounded bg-muted px-1">run.bat</code>) в папке с ботом.</li>
-                      <li>Запустите бота снова — готово! Все ваши настройки, токен и треки сохранятся.</li>
+                      <li>
+                        Остановите текущего бота в консоли (
+                        <kbd className="rounded bg-muted px-1 font-mono">
+                          Ctrl+C
+                        </kbd>
+                        ) или просто закройте окно.
+                      </li>
+                      <li>
+                        Нажмите <strong>«Скачать обновление»</strong> ниже и
+                        скачайте архив для вашей системы (например,{" "}
+                        <code className="rounded bg-muted px-1">
+                          discord-music-bot-windows-x64.zip
+                        </code>
+                        ).
+                      </li>
+                      <li>Распакуйте архив в папку с текущим ботом.</li>
+                      <li>
+                        Запустите бота снова — готово! Все ваши настройки, токен
+                        и треки сохранятся.
+                      </li>
                     </ol>
                   </div>
 
                   <div className="space-y-2 rounded-lg border bg-muted/40 p-3">
                     <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                      Последующие обновления (начиная со следующей версии)
+                      Последующие обновления (начиная с v0.2.0)
                     </p>
                     <p className="text-xs leading-relaxed">
-                      Новая версия уже умеет обновляться сама: при перезапуске в терминале бот сам спросит: <br />
+                      Новая версия уже умеет обновляться сама: при перезапуске в
+                      терминале бот сам спросит: <br />
                       <span className="mt-1 block rounded bg-black/80 p-2 font-mono text-[11px] text-emerald-400">
                         Do you want to update now? (y/N) [default: N in 10s]:
                       </span>
-                      и скачает обновление автоматически при нажатии <strong>y</strong>.
+                      и скачает обновление автоматически при нажатии{" "}
+                      <strong>y</strong>.
                     </p>
                   </div>
                 </div>
               </DialogDescription>
             </DialogHeader>
             <div className="flex justify-end gap-2 pt-2">
-              <Button variant="outline" size="sm" onClick={() => setShowHowToDialog(false)}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowHowToDialog(false)}
+              >
                 Понятно
               </Button>
               <Button size="sm" asChild>
                 <a
-                  href={data.bot?.releaseUrl ?? "https://github.com/Marselchi/discord-music-bot/releases"}
+                  href={
+                    data.bot?.releaseUrl ??
+                    "https://github.com/Marselchi/discord-music-bot/releases"
+                  }
                   target="_blank"
                   rel="noreferrer"
                 >
@@ -201,7 +236,8 @@ export function SystemUpdateBanner() {
             <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
               {ytdlpUpdate && (
                 <span>
-                  <strong>yt-dlp:</strong> {data.ytdlp.current ?? "неизвестно"} →{" "}
+                  <strong>yt-dlp:</strong> {data.ytdlp.current ?? "неизвестно"}{" "}
+                  →{" "}
                   <span className="font-semibold text-emerald-600 dark:text-emerald-400">
                     {data.ytdlp.latest}
                   </span>
@@ -209,7 +245,8 @@ export function SystemUpdateBanner() {
               )}
               {ffmpegUpdate && (
                 <span>
-                  <strong>ffmpeg:</strong> {data.ffmpeg.current ?? "неизвестно"} →{" "}
+                  <strong>ffmpeg:</strong> {data.ffmpeg.current ?? "неизвестно"}{" "}
+                  →{" "}
                   <span className="font-semibold text-emerald-600 dark:text-emerald-400">
                     {data.ffmpeg.latest}
                   </span>
@@ -244,11 +281,7 @@ export function SystemUpdateBanner() {
               className="h-8 gap-1 text-xs"
               asChild
             >
-              <a
-                href={data.ffmpeg.releaseUrl}
-                target="_blank"
-                rel="noreferrer"
-              >
+              <a href={data.ffmpeg.releaseUrl} target="_blank" rel="noreferrer">
                 Скачать FFmpeg
                 <ArrowUpRight className="size-3" />
               </a>
