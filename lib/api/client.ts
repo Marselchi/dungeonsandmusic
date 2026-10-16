@@ -202,9 +202,9 @@ export class ApiClient {
 
   // ---- Library (search + local file scanning) --------------------------------
 
-  searchLibrary(query: string): Promise<{ tracks: Track[] }> {
+  searchLibrary(query = "", limit = 50, offset = 0): Promise<{ tracks: Track[] }> {
     const q = encodeURIComponent(query);
-    return this.get(`/api/library/search?q=${q}`);
+    return this.get(`/api/library/search?q=${q}&limit=${limit}&offset=${offset}`);
   }
 
   downloadLibrary(body: { url?: string; query?: string }): Promise<{ jobId?: string; trackId?: string; track?: Track }> {
@@ -240,8 +240,9 @@ export class ApiClient {
     return this.patch(`/api/tracks/${encodeURIComponent(trackId)}`, { title });
   }
 
-  enqueuePlaylist(guildId: string, url: string): Promise<{ ok: true; count: number; title: string }> {
-    return this.post(`/api/queue/${encodeURIComponent(guildId)}/playlist`, { url });
+  enqueuePlaylist(guildId: string, payload: string | { url?: string; playlistId?: string }): Promise<{ ok: true; count: number; title: string }> {
+    const body = typeof payload === "string" ? { url: payload } : payload;
+    return this.post(`/api/queue/${encodeURIComponent(guildId)}/playlist`, body);
   }
 
   // ---- System & Updates ----------------------------------------------------

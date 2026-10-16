@@ -10,6 +10,7 @@ export interface ServerEvents {
   "download.progress": { jobId: string; done: number; total: number };
   "voice.connected": { guildId: string; channelId: string };
   "voice.disconnected": { guildId: string };
+  "playlists.changed": Record<string, never>;
   /** Not from the bus — sent directly by the ws layer on bad auth/JSON. */
   error: { message: string };
 }

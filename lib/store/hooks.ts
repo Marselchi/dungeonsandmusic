@@ -125,7 +125,7 @@ export function useQueue(guildId: string | null) {
   }, [socket, guildId, refetch]);
 
   const addToQueue = useCallback((body: AddToQueueRequest) => (guildId ? api.addToQueue(guildId, body) : Promise.reject(new Error("No guild selected"))), [api, guildId]);
-  const addPlaylistToQueue = useCallback((url: string) => (guildId ? api.enqueuePlaylist(guildId, url) : Promise.reject(new Error("No guild selected"))), [api, guildId]);
+  const addPlaylistToQueue = useCallback((payload: string | { url?: string; playlistId?: string }) => (guildId ? api.enqueuePlaylist(guildId, payload) : Promise.reject(new Error("No guild selected"))), [api, guildId]);
   const removeFromQueue = useCallback((position: number) => (guildId ? api.removeFromQueue(guildId, position) : Promise.reject(new Error("No guild selected"))), [api, guildId]);
   const reorderQueue = useCallback((from: number, to: number) => (guildId ? api.reorderQueue(guildId, from, to) : Promise.reject(new Error("No guild selected"))), [api, guildId]);
   const clearQueue = useCallback(() => (guildId ? api.clearQueue(guildId) : Promise.reject(new Error("No guild selected"))), [api, guildId]);
@@ -269,7 +269,7 @@ export function useSettings() {
 // ---- Playlists -----------------------------------------------------------------
 
 export function usePlaylists() {
-  const { api, isPaired } = useBackend();
+  const { api, isPaired, socket } = useBackend();
   const [state, setState] = useState<AsyncState<Playlist[]>>(INITIAL_STATE);
 
   const refetch = useCallback(async () => {
@@ -286,6 +286,13 @@ export function usePlaylists() {
   useEffect(() => {
     refetch();
   }, [refetch]);
+
+  useEffect(() => {
+    if (!socket) return;
+    return socket.on("playlists.changed", () => {
+      refetch();
+    });
+  }, [socket, refetch]);
 
   const create = useCallback(
     async (name: string) => {
@@ -349,26 +356,75 @@ export function usePlaylistTracks(playlistId: string | null) {
 
 // ---- Library (search + local scan) ---------------------------------------------
 
+const PAGE_SIZE = 50;
+
 export function useLibrarySearch() {
-  const { api } = useBackend();
-  const [state, setState] = useState<AsyncState<Track[]>>({ data: null, loading: false, error: null });
+  const { api, isPaired } = useBackend();
+  const [tracks, setTracks] = useState<Track[] | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
+  const [currentQuery, setCurrentQuery] = useState("");
 
   const search = useCallback(
     async (query: string) => {
-      setState((s) => ({ ...s, loading: true }));
+      setCurrentQuery(query);
+      setLoading(true);
+      setError(null);
       try {
-        const { tracks } = await api.searchLibrary(query);
-        setState({ data: tracks, loading: false, error: null });
-        return tracks;
-      } catch (error) {
-        setState({ data: null, loading: false, error: error as Error });
-        throw error;
+        const res = await api.searchLibrary(query, PAGE_SIZE, 0);
+        setTracks(res.tracks);
+        setHasMore(res.tracks.length === PAGE_SIZE);
+        return res.tracks;
+      } catch (err) {
+        setError(err as Error);
+        throw err;
+      } finally {
+        setLoading(false);
       }
     },
     [api]
   );
 
-  return { ...state, search };
+  const loadMore = useCallback(async () => {
+    if (loading || loadingMore || !hasMore || !tracks) return;
+    setLoadingMore(true);
+    try {
+      const offset = tracks.length;
+      const res = await api.searchLibrary(currentQuery, PAGE_SIZE, offset);
+      setTracks((prev) => (prev ? [...prev, ...res.tracks] : res.tracks));
+      setHasMore(res.tracks.length === PAGE_SIZE);
+    } catch (err) {
+      setError(err as Error);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [api, currentQuery, hasMore, loading, loadingMore, tracks]);
+
+  const refetch = useCallback(async () => {
+    return await search(currentQuery);
+  }, [search, currentQuery]);
+
+  // Initial load when paired
+  useEffect(() => {
+    if (isPaired) {
+      void search("");
+    }
+  }, [isPaired, search]);
+
+  return {
+    data: tracks,
+    tracks: tracks ?? [],
+    loading,
+    loadingMore,
+    hasMore,
+    error,
+    currentQuery,
+    search,
+    loadMore,
+    refetch,
+  };
 }
 
 export function useLibraryActions() {

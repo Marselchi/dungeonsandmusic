@@ -228,7 +228,12 @@ export function SliceModal({
         createPlaylistName: createPlaylist && playlistName.trim() ? playlistName.trim() : undefined,
       });
 
-      toast.success(`Успешно нарезано треков: ${res.tracks.length}`, { id: toastId });
+      const isPlaylistCreated = Boolean(createPlaylist && playlistName.trim() && res.playlistId);
+      const successMsg = isPlaylistCreated
+        ? `Нарезано треков: ${res.tracks.length}, создан плейлист «${playlistName.trim()}»`
+        : `Успешно нарезано треков: ${res.tracks.length}`;
+
+      toast.success(successMsg, { id: toastId });
       onOpenChange(false);
       onSuccess?.(res.tracks);
     } catch (err) {
@@ -240,7 +245,7 @@ export function SliceModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl sm:max-h-[90vh] flex flex-col">
+      <DialogContent className="max-w-4xl w-[95vw] sm:max-h-[90vh] flex flex-col">
         <form onSubmit={handleSubmit} className="flex flex-col min-h-0 flex-1">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -303,70 +308,75 @@ export function SliceModal({
                 </Button>
               </div>
 
-              <ScrollArea className="h-64 rounded-md border p-2">
+              <ScrollArea className="h-[340px] sm:h-[400px] rounded-md border p-2.5">
                 <div className="flex flex-col gap-2">
                   {slices.map((slice, index) => (
                     <div
                       key={slice.id}
-                      className="flex items-center gap-2 rounded-lg bg-muted/40 p-2"
+                      className="flex flex-col sm:flex-row sm:items-center gap-2 rounded-lg bg-muted/40 p-2.5 border border-border/40 hover:border-border transition-colors"
                     >
-                      <span className="w-5 text-center font-mono text-xs text-muted-foreground">
-                        {index + 1}
-                      </span>
-                      <Input
-                        value={slice.title}
-                        onChange={(e) =>
-                          handleUpdateSlice(slice.id, "title", e.target.value)
-                        }
-                        placeholder="Название трека"
-                        className="h-8 flex-1 text-xs"
-                      />
-                      <div className="flex items-center gap-1 text-xs">
-                        <Clock className="size-3 text-muted-foreground" />
+                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                        <span className="w-6 shrink-0 text-center font-mono text-xs font-semibold text-muted-foreground">
+                          {index + 1}
+                        </span>
                         <Input
-                          value={slice.startStr}
+                          value={slice.title}
                           onChange={(e) =>
-                            handleUpdateSlice(slice.id, "startStr", e.target.value)
+                            handleUpdateSlice(slice.id, "title", e.target.value)
                           }
-                          placeholder="0:00"
-                          className="h-8 w-16 text-center font-mono text-xs"
-                          title="Начало (мм:сс или чч:мм:сс)"
-                        />
-                        <span className="text-muted-foreground">—</span>
-                        <Input
-                          value={slice.endStr}
-                          onChange={(e) =>
-                            handleUpdateSlice(slice.id, "endStr", e.target.value)
-                          }
-                          placeholder="3:30"
-                          className="h-8 w-16 text-center font-mono text-xs"
-                          title="Конец (мм:сс или чч:мм:сс)"
+                          placeholder="Название трека"
+                          className="h-9 flex-1 text-sm"
                         />
                       </div>
-                      <Button
-                        type="button"
-                        size="icon"
-                        variant="ghost"
-                        className="size-8 text-muted-foreground hover:text-destructive"
-                        onClick={() => handleRemoveSlice(slice.id)}
-                        disabled={slices.length <= 1}
-                        aria-label="Удалить фрагмент"
-                      >
-                        <Trash2 className="size-3.5" />
-                      </Button>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <div className="flex items-center gap-1.5 bg-background/80 rounded-md border px-2 py-1">
+                          <Clock className="size-3.5 text-muted-foreground shrink-0" />
+                          <span className="text-xs text-muted-foreground font-medium">От:</span>
+                          <Input
+                            value={slice.startStr}
+                            onChange={(e) =>
+                              handleUpdateSlice(slice.id, "startStr", e.target.value)
+                            }
+                            placeholder="0:00"
+                            className="h-7 w-24 sm:w-28 text-center font-mono text-xs sm:text-sm px-1.5"
+                            title="Начало (мм:сс или чч:мм:сс)"
+                          />
+                          <span className="text-xs text-muted-foreground font-medium ml-1">До:</span>
+                          <Input
+                            value={slice.endStr}
+                            onChange={(e) =>
+                              handleUpdateSlice(slice.id, "endStr", e.target.value)
+                            }
+                            placeholder="3:30"
+                            className="h-7 w-24 sm:w-28 text-center font-mono text-xs sm:text-sm px-1.5"
+                            title="Конец (мм:сс или чч:мм:сс)"
+                          />
+                        </div>
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="ghost"
+                          className="size-8 text-muted-foreground hover:text-destructive"
+                          onClick={() => handleRemoveSlice(slice.id)}
+                          disabled={slices.length <= 1}
+                          aria-label="Удалить фрагмент"
+                        >
+                          <Trash2 className="size-4" />
+                        </Button>
+                      </div>
                     </div>
                   ))}
                 </div>
               </ScrollArea>
 
-              <div className="flex flex-col gap-2 rounded-lg border p-3 text-xs">
+              <div className="flex flex-col gap-2.5 rounded-lg border p-3 text-xs">
                 {guildId && (
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
                       type="checkbox"
                       checked={enqueueInGuild}
                       onChange={(e) => setEnqueueInGuild(e.target.checked)}
-                      className="rounded border-gray-300"
+                      className="size-4 rounded border-gray-300 text-primary"
                     />
                     <span>Добавить полученные треки в текущую очередь воспроизведения</span>
                   </label>
@@ -376,17 +386,20 @@ export function SliceModal({
                     type="checkbox"
                     checked={createPlaylist}
                     onChange={(e) => setCreatePlaylist(e.target.checked)}
-                    className="rounded border-gray-300"
+                    className="size-4 rounded border-gray-300 text-primary"
                   />
-                  <span>Собрать нарезку в новый плейлист</span>
+                  <span className="font-medium">Собрать нарезку в новый плейлист</span>
                 </label>
                 {createPlaylist && (
-                  <Input
-                    value={playlistName}
-                    onChange={(e) => setPlaylistName(e.target.value)}
-                    placeholder="Название плейлиста"
-                    className="mt-1 h-8 text-xs"
-                  />
+                  <div className="flex flex-col gap-1 pl-6 pt-1">
+                    <Label className="text-xs text-muted-foreground">Название нового плейлиста:</Label>
+                    <Input
+                      value={playlistName}
+                      onChange={(e) => setPlaylistName(e.target.value)}
+                      placeholder="Название плейлиста"
+                      className="h-8 text-xs"
+                    />
+                  </div>
                 )}
               </div>
             </div>

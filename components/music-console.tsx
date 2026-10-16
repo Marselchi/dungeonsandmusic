@@ -25,6 +25,7 @@ import { NowPlayingCard } from "@/components/now-playing-card";
 import { LibraryCard } from "@/components/library-card";
 import { QueueCard } from "@/components/queue-card";
 import { VoiceChannelCard } from "@/components/voice-channel-card";
+import { PlaylistsCard } from "@/components/playlists-card";
 import { DownloadProgress } from "@/components/download-progress";
 import { SystemUpdateBanner } from "@/components/system-update-banner";
 
@@ -146,7 +147,7 @@ export function MusicConsole() {
               <div className="flex min-w-0 flex-col gap-6">
                 <QueueCard queue={queue} player={player} />
                 <VoiceChannelCard channels={channels} player={player} />
-                {/*<PlaylistsCard />*/}
+                <PlaylistsCard queue={queue} player={player} />
               </div>
             </div>
           )}
