@@ -1,6 +1,16 @@
 "use client";
 
-import { Loader2, ListMusic, Music2, Play, Plus, Search } from "lucide-react";
+import { useState } from "react";
+import {
+  Edit2,
+  ListMusic,
+  Loader2,
+  Music2,
+  Play,
+  Plus,
+  Scissors,
+  Search,
+} from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,10 +25,27 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useLibraryActions, useLibrarySearch } from "@/lib/store/hooks";
 import { toast } from "sonner";
 import { formatDuration } from "@/components/music-console";
+import { RenameTrackDialog } from "@/components/rename-track-dialog";
+import { SliceModal } from "@/components/slice-modal";
+import { PlaylistDownloadDialog } from "@/components/playlist-download-dialog";
+import type { Track } from "@/lib/api/types";
 
-export function LibraryCard({ queue, player }: Readonly<{ queue: any; player: any }>) {
+export function LibraryCard({
+  queue,
+  player,
+}: Readonly<{ queue: any; player: any }>) {
   const library = useLibrarySearch();
   const actions = useLibraryActions();
+
+  // Dialog states
+  const [renameTrack, setRenameTrack] = useState<Track | null>(null);
+  const [sliceTarget, setSliceTarget] = useState<{
+    track?: Track | null;
+    url?: string;
+  } | null>(null);
+  const [playlistPromptUrl, setPlaylistPromptUrl] = useState<string | null>(null);
+  const [lastQuery, setLastQuery] = useState("");
+
   const run = async (action: () => Promise<unknown>, message: string) => {
     const toastId = toast.loading("Выполняется…");
     try {
@@ -28,6 +55,27 @@ export function LibraryCard({ queue, player }: Readonly<{ queue: any; player: an
       toast.error((error as Error).message, { id: toastId });
     }
   };
+
+  const handleFormSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const input = event.currentTarget.elements.namedItem("query") as HTMLInputElement;
+    const value = input.value.trim();
+    if (!value) return;
+
+    if (value.startsWith("http")) {
+      // Check if it's a playlist URL
+      if (value.includes("list=") || value.includes("/playlist")) {
+        setPlaylistPromptUrl(value);
+      } else {
+        void run(() => actions.download({ url: value }), "Трек скачивается в библиотеку");
+      }
+    } else {
+      setLastQuery(value);
+      void library.search(value);
+    }
+    input.value = "";
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -42,24 +90,10 @@ export function LibraryCard({ queue, player }: Readonly<{ queue: any; player: an
         </div>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
-        <form
-          onSubmit={(event) => {
-            event.preventDefault();
-            const input = event.currentTarget.elements.namedItem("query") as HTMLInputElement;
-            const value = input.value.trim();
-            if (!value) return;
-            if (value.startsWith("http")) {
-              void run(() => actions.download({ url: value }), "Трек скачивается в библиотеку");
-            } else {
-              void library.search(value);
-            }
-            input.value = "";
-          }}
-          className="flex gap-2"
-        >
+        <form onSubmit={handleFormSubmit} className="flex gap-2">
           <Input
             name="query"
-            placeholder="Ссылка или название трека"
+            placeholder="Ссылка (видео/плейлист) или название трека"
             aria-label="Поиск библиотеки"
           />
           <Button type="submit" variant="secondary" disabled={library.loading}>
@@ -71,11 +105,13 @@ export function LibraryCard({ queue, player }: Readonly<{ queue: any; player: an
             {actions.loading ? "Скачивание…" : "Найти / скачать"}
           </Button>
         </form>
+
         {library.error && (
           <Alert variant="destructive">
             <AlertDescription>{library.error.message}</AlertDescription>
           </Alert>
         )}
+
         <ScrollArea className="h-64">
           {library.data?.length ? (
             <div className="flex flex-col gap-1">
@@ -107,18 +143,46 @@ export function LibraryCard({ queue, player }: Readonly<{ queue: any; player: an
                     <Button
                       size="icon"
                       variant="ghost"
-                      onClick={() => void run(() => player.playAdhoc(track.id), "Воспроизведение начато")}
-                      aria-label={`Воспроизвести ${track.title}`}
+                      onClick={() => setRenameTrack(track)}
+                      aria-label={`Переименовать ${track.title}`}
+                      title="Переименовать"
                     >
-                      <Play />
+                      <Edit2 className="size-4" />
                     </Button>
                     <Button
                       size="icon"
                       variant="ghost"
-                      onClick={() => void run(() => queue.addToQueue({ trackId: track.id }), "Трек добавлен в очередь")}
+                      onClick={() => setSliceTarget({ track })}
+                      aria-label={`Разрезать ${track.title}`}
+                      title="Разрезать на части"
+                    >
+                      <Scissors className="size-4" />
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={() =>
+                        void run(
+                          () => player.playAdhoc(track.id),
+                          "Воспроизведение начато"
+                        )
+                      }
+                      aria-label={`Воспроизвести ${track.title}`}
+                    >
+                      <Play className="size-4" />
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={() =>
+                        void run(
+                          () => queue.addToQueue({ trackId: track.id }),
+                          "Трек добавлен в очередь"
+                        )
+                      }
                       aria-label={`Добавить ${track.title} в очередь`}
                     >
-                      <Plus />
+                      <Plus className="size-4" />
                     </Button>
                   </div>
                 </div>
@@ -131,6 +195,53 @@ export function LibraryCard({ queue, player }: Readonly<{ queue: any; player: an
           )}
         </ScrollArea>
       </CardContent>
+
+      {/* Rename Dialog */}
+      <RenameTrackDialog
+        track={renameTrack}
+        open={Boolean(renameTrack)}
+        onOpenChange={(open) => !open && setRenameTrack(null)}
+        onRenamed={() => {
+          if (lastQuery) void library.search(lastQuery);
+          void queue.refetch?.();
+        }}
+      />
+
+      {/* Slice Modal */}
+      <SliceModal
+        open={Boolean(sliceTarget)}
+        onOpenChange={(open) => !open && setSliceTarget(null)}
+        track={sliceTarget?.track}
+        url={sliceTarget?.url}
+        guildId={queue.guildId ?? null}
+        onSuccess={() => {
+          if (lastQuery) void library.search(lastQuery);
+          void queue.refetch?.();
+        }}
+      />
+
+      {/* Playlist Download Dialog */}
+      <PlaylistDownloadDialog
+        open={Boolean(playlistPromptUrl)}
+        onOpenChange={(open) => !open && setPlaylistPromptUrl(null)}
+        url={playlistPromptUrl ?? ""}
+        loading={actions.loading}
+        onDownloadSingle={() => {
+          if (!playlistPromptUrl) return;
+          const u = playlistPromptUrl;
+          setPlaylistPromptUrl(null);
+          void run(() => actions.download({ url: u }), "Трек скачивается в библиотеку");
+        }}
+        onDownloadPlaylist={() => {
+          if (!playlistPromptUrl) return;
+          const u = playlistPromptUrl;
+          setPlaylistPromptUrl(null);
+          void run(
+            () => actions.downloadPlaylist({ url: u, createPlaylist: true }),
+            "Плейлист скачивается в библиотеку"
+          );
+        }}
+      />
     </Card>
   );
 }

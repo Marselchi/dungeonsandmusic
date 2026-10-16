@@ -85,3 +85,74 @@ export type ApiErrorCode =
 export interface ApiErrorBody {
   error: { code: ApiErrorCode | string; message: string };
 }
+
+export interface Chapter {
+  title: string;
+  startTime: number;
+  endTime: number;
+}
+
+export interface InspectMetadata {
+  id: string;
+  title: string;
+  duration: number | null;
+  thumbnail: string | null;
+  url: string;
+  chapters: Chapter[];
+}
+
+export interface InspectResponse {
+  metadata: InspectMetadata;
+}
+
+export interface SliceDefinition {
+  title: string;
+  startTime: number;
+  endTime: number;
+}
+
+export interface SliceTrackRequest {
+  url?: string;
+  trackId?: string;
+  slices: SliceDefinition[];
+  enqueueGuildId?: string;
+  createPlaylistName?: string;
+}
+
+export interface SliceTrackResponse {
+  ok: true;
+  parentTrackId: string;
+  tracks: Track[];
+  playlistId?: string | null;
+}
+
+export interface DownloadPlaylistRequest {
+  url: string;
+  createPlaylist?: boolean;
+}
+
+export interface DownloadPlaylistResponse {
+  ok: true;
+  jobId: string;
+  playlistId: string | null;
+  title: string;
+  trackCount: number;
+  tracks: Track[];
+}
+
+export interface BinaryVersionInfo {
+  name: string;
+  current: string | null;
+  latest: string | null;
+  updateAvailable: boolean;
+  releaseUrl: string;
+  canAutoUpdate: boolean;
+}
+
+export interface SystemUpdatesResponse {
+  bot?: BinaryVersionInfo;
+  ytdlp: BinaryVersionInfo;
+  ffmpeg: BinaryVersionInfo;
+  checkedAt: number;
+}
+

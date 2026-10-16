@@ -11,6 +11,13 @@ import type {
   SettingsMap,
   Track,
   VoiceChannel,
+  Chapter,
+  InspectResponse,
+  SliceTrackRequest,
+  SliceTrackResponse,
+  DownloadPlaylistRequest,
+  DownloadPlaylistResponse,
+  SystemUpdatesResponse,
 } from "./types";
 
 export interface ApiClientOptions {
@@ -212,4 +219,39 @@ export class ApiClient {
   scanLibrary(): Promise<{ jobId: string }> {
     return this.post("/api/library/scan");
   }
+
+  inspectUrl(url: string): Promise<InspectResponse> {
+    return this.post("/api/library/inspect", { url });
+  }
+
+  downloadPlaylist(body: DownloadPlaylistRequest): Promise<DownloadPlaylistResponse> {
+    return this.post("/api/library/download-playlist", body);
+  }
+
+  sliceTrack(body: SliceTrackRequest): Promise<SliceTrackResponse> {
+    return this.post("/api/library/slice", body);
+  }
+
+  getTrackChapters(trackId: string): Promise<{ trackId: string; title: string; durationSeconds: number | null; chapters: Chapter[] }> {
+    return this.get(`/api/tracks/${encodeURIComponent(trackId)}/chapters`);
+  }
+
+  renameTrack(trackId: string, title: string): Promise<{ ok: true; track: Track }> {
+    return this.patch(`/api/tracks/${encodeURIComponent(trackId)}`, { title });
+  }
+
+  enqueuePlaylist(guildId: string, url: string): Promise<{ ok: true; count: number; title: string }> {
+    return this.post(`/api/queue/${encodeURIComponent(guildId)}/playlist`, { url });
+  }
+
+  // ---- System & Updates ----------------------------------------------------
+
+  getSystemUpdates(force = false): Promise<SystemUpdatesResponse> {
+    return this.get(`/api/system/updates${force ? "?force=true" : ""}`);
+  }
+
+  updateYtdlp(): Promise<{ ok: true; output: string; status: SystemUpdatesResponse }> {
+    return this.post("/api/system/update/ytdlp");
+  }
 }
+

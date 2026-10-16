@@ -19,15 +19,18 @@ import {
   useGuilds,
   usePlayerState,
   useQueue,
+  useSystemUpdates,
 } from "@/lib/store/hooks";
 import { NowPlayingCard } from "@/components/now-playing-card";
 import { LibraryCard } from "@/components/library-card";
 import { QueueCard } from "@/components/queue-card";
 import { VoiceChannelCard } from "@/components/voice-channel-card";
 import { DownloadProgress } from "@/components/download-progress";
+import { SystemUpdateBanner } from "@/components/system-update-banner";
 
 export function MusicConsole() {
   const { setToken, socketStatus } = useBackend();
+  const { botVersion, isBotOutdated, latestBotVersion } = useSystemUpdates();
   const guilds = useGuilds();
   const [guildId, setGuildId] = useState<string | null>(null);
   const selectedGuild = useMemo(
@@ -40,8 +43,9 @@ export function MusicConsole() {
   const progress = useDownloadProgress();
 
   return (
-    <main className="min-h-screen bg-background text-foreground">
-      <div className="mx-auto flex min-h-screen max-w-375 flex-col lg:flex-row">
+    <main className="min-h-screen bg-background text-foreground flex flex-col">
+      <SystemUpdateBanner />
+      <div className="mx-auto flex min-h-screen max-w-375 flex-col lg:flex-row flex-1 w-full">
         <section className="flex min-w-0 flex-1 flex-col">
           <header className="flex flex-wrap items-center justify-between gap-4 border-b px-6 py-5 lg:px-8">
             <div>
@@ -77,6 +81,26 @@ export function MusicConsole() {
                   ))}
                 </SelectContent>
               </Select>
+              {botVersion && (
+                <Badge
+                  variant={isBotOutdated ? "destructive" : "outline"}
+                  className="hidden gap-1.5 py-1.5 font-mono text-[11px] sm:inline-flex"
+                  title={
+                    isBotOutdated
+                      ? `Доступно обновление бота до v${latestBotVersion}`
+                      : `Версия бота v${botVersion}`
+                  }
+                >
+                  {isBotOutdated ? (
+                    <>
+                      <span className="size-1.5 rounded-full bg-amber-300 animate-pulse" />
+                      Бот: v{botVersion} (доступна v{latestBotVersion})
+                    </>
+                  ) : (
+                    <>Бот: v{botVersion}</>
+                  )}
+                </Badge>
+              )}
               <Button
                 type="button"
                 variant="outline"

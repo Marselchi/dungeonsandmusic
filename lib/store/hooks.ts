@@ -12,6 +12,14 @@ import type {
   SettingsMap,
   Track,
   VoiceChannel,
+  Chapter,
+  DownloadPlaylistRequest,
+  DownloadPlaylistResponse,
+  InspectResponse,
+  SliceTrackRequest,
+  SliceTrackResponse,
+  SystemUpdatesResponse,
+  BinaryVersionInfo,
 } from "../api/types";
 
 interface AsyncState<T> {
@@ -112,16 +120,17 @@ export function useQueue(guildId: string | null) {
   useEffect(() => {
     if (!socket || !guildId) return;
     return socket.on("queue.changed", (payload) => {
-      if (payload.guildId === guildId) refetch();
+      if (payload.guildId === guildId || payload.guildId === "*") refetch();
     });
   }, [socket, guildId, refetch]);
 
   const addToQueue = useCallback((body: AddToQueueRequest) => (guildId ? api.addToQueue(guildId, body) : Promise.reject(new Error("No guild selected"))), [api, guildId]);
+  const addPlaylistToQueue = useCallback((url: string) => (guildId ? api.enqueuePlaylist(guildId, url) : Promise.reject(new Error("No guild selected"))), [api, guildId]);
   const removeFromQueue = useCallback((position: number) => (guildId ? api.removeFromQueue(guildId, position) : Promise.reject(new Error("No guild selected"))), [api, guildId]);
   const reorderQueue = useCallback((from: number, to: number) => (guildId ? api.reorderQueue(guildId, from, to) : Promise.reject(new Error("No guild selected"))), [api, guildId]);
   const clearQueue = useCallback(() => (guildId ? api.clearQueue(guildId) : Promise.reject(new Error("No guild selected"))), [api, guildId]);
 
-  return { ...state, refetch, addToQueue, removeFromQueue, reorderQueue, clearQueue };
+  return { ...state, refetch, addToQueue, addPlaylistToQueue, removeFromQueue, reorderQueue, clearQueue };
 }
 
 // ---- Player state + transport controls --------------------------------------
@@ -362,19 +371,44 @@ export function useLibrarySearch() {
   return { ...state, search };
 }
 
-/** Tracks in-progress scan/download jobs by id, fed entirely by `download.progress` events. */
 export function useLibraryActions() {
   const { api } = useBackend();
   const [loading, setLoading] = useState(false);
+
   const download = useCallback(async (body: { url?: string; query?: string }) => {
     setLoading(true);
     try { return await api.downloadLibrary(body); } finally { setLoading(false); }
   }, [api]);
+
   const ensure = useCallback(async (trackId: string) => {
     setLoading(true);
     try { return await api.ensureLibraryTrack(trackId); } finally { setLoading(false); }
   }, [api]);
-  return { loading, download, ensure };
+
+  const downloadPlaylist = useCallback(async (body: DownloadPlaylistRequest) => {
+    setLoading(true);
+    try { return await api.downloadPlaylist(body); } finally { setLoading(false); }
+  }, [api]);
+
+  const sliceTrack = useCallback(async (body: SliceTrackRequest) => {
+    setLoading(true);
+    try { return await api.sliceTrack(body); } finally { setLoading(false); }
+  }, [api]);
+
+  const inspectUrl = useCallback(async (url: string) => {
+    return await api.inspectUrl(url);
+  }, [api]);
+
+  const getTrackChapters = useCallback(async (trackId: string) => {
+    return await api.getTrackChapters(trackId);
+  }, [api]);
+
+  const renameTrack = useCallback(async (trackId: string, title: string) => {
+    setLoading(true);
+    try { return await api.renameTrack(trackId, title); } finally { setLoading(false); }
+  }, [api]);
+
+  return { loading, download, ensure, downloadPlaylist, sliceTrack, inspectUrl, getTrackChapters, renameTrack };
 }
 
 export function useDownloadProgress() {
@@ -405,3 +439,139 @@ export function useDownloadProgress() {
 
   return { jobs, dismiss };
 }
+
+function compareVersions(current: string | null, latest: string | null): boolean {
+  if (!current || !latest) return false;
+  const cleanCurr = current.replace(/^v/i, "").replace(/^n/i, "").trim();
+  const cleanLate = latest.replace(/^v/i, "").replace(/^n/i, "").trim();
+  if (cleanCurr === cleanLate) return false;
+
+  const p1 = cleanCurr.split(/[.-]/).map((p) => parseInt(p, 10));
+  const p2 = cleanLate.split(/[.-]/).map((p) => parseInt(p, 10));
+  for (let i = 0; i < Math.max(p1.length, p2.length); i++) {
+    const num1 = p1[i] ?? 0;
+    const num2 = p2[i] ?? 0;
+    if (isNaN(num1) || isNaN(num2)) continue;
+    if (num2 > num1) return true;
+    if (num1 > num2) return false;
+  }
+  return false;
+}
+
+// ---- System & Updates ---------------------------------------------------------
+
+export function useSystemUpdates() {
+  const { api, isPaired } = useBackend();
+  const [state, setState] = useState<AsyncState<SystemUpdatesResponse>>(INITIAL_STATE);
+  const [updating, setUpdating] = useState(false);
+
+  const refetch = useCallback(async (force = false) => {
+    if (!isPaired) return;
+    setState((s) => ({ ...s, loading: true }));
+    try {
+      // 1. First probe health to get current bot version (works on ANY bot backend, new or old)
+      let currentBotVersion: string | null = null;
+      try {
+        const health = await api.health();
+        currentBotVersion = health.version;
+      } catch {
+        // ignore
+      }
+
+      // 2. Try getting system updates from backend
+      let systemData: SystemUpdatesResponse | null = null;
+      try {
+        systemData = await api.getSystemUpdates(force);
+      } catch {
+        // old bot backend without /api/system/updates
+      }
+
+      // 3. Ensure bot update info is populated accurately
+      if (!systemData?.bot || !systemData.bot.latest) {
+        let latestTag: string | null = null;
+        let releaseUrl = "https://github.com/Marselchi/discord-music-bot/releases/latest";
+        try {
+          const ghRes = await fetch("https://api.github.com/repos/Marselchi/discord-music-bot/releases/latest", {
+            headers: { Accept: "application/vnd.github.v3+json" },
+            signal: AbortSignal.timeout(5000),
+          });
+          if (ghRes.ok) {
+            const release = await ghRes.json();
+            latestTag = release.tag_name ? release.tag_name.replace(/^v/, "") : null;
+            if (release.html_url) releaseUrl = release.html_url;
+          }
+        } catch {
+          // ignore network failure
+        }
+
+        const effectiveCurrent = systemData?.bot?.current || currentBotVersion;
+        const isOutdated = compareVersions(effectiveCurrent, latestTag);
+        const botInfo: BinaryVersionInfo = {
+          name: "discord-music-bot",
+          current: effectiveCurrent,
+          latest: latestTag,
+          updateAvailable: isOutdated,
+          releaseUrl,
+          canAutoUpdate: false,
+        };
+
+        if (systemData) {
+          systemData = { ...systemData, bot: botInfo };
+        } else {
+          systemData = {
+            bot: botInfo,
+            ytdlp: {
+              name: "yt-dlp",
+              current: null,
+              latest: null,
+              updateAvailable: false,
+              releaseUrl: "https://github.com/yt-dlp/yt-dlp/releases/latest",
+              canAutoUpdate: false,
+            },
+            ffmpeg: {
+              name: "ffmpeg",
+              current: null,
+              latest: null,
+              updateAvailable: false,
+              releaseUrl: "https://www.gyan.dev/ffmpeg/builds/",
+              canAutoUpdate: false,
+            },
+            checkedAt: Date.now(),
+          };
+        }
+      } else if (currentBotVersion && !systemData.bot.current) {
+        systemData.bot.current = currentBotVersion;
+      }
+
+      setState({ data: systemData, loading: false, error: null });
+    } catch (error) {
+      setState({ data: null, loading: false, error: error as Error });
+    }
+  }, [api, isPaired]);
+
+  useEffect(() => {
+    refetch();
+  }, [refetch]);
+
+  const updateYtdlp = useCallback(async () => {
+    setUpdating(true);
+    try {
+      const res = await api.updateYtdlp();
+      setState({ data: res.status, loading: false, error: null });
+      return res;
+    } finally {
+      setUpdating(false);
+    }
+  }, [api]);
+
+  return {
+    ...state,
+    refetch,
+    updateYtdlp,
+    updating,
+    botVersion: state.data?.bot?.current ?? null,
+    isBotOutdated: Boolean(state.data?.bot?.updateAvailable),
+    latestBotVersion: state.data?.bot?.latest ?? null,
+  };
+}
+
