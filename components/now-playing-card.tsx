@@ -1,6 +1,7 @@
 "use client";
 
-import { Disc3, Pause, Play, Repeat2, SkipForward } from "lucide-react";
+import { useState } from "react";
+import { Disc3, Edit2, Pause, Play, Repeat2, Scissors, SkipForward } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,9 +14,15 @@ import {
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { formatDuration } from "@/components/music-console";
+import { RenameTrackDialog } from "@/components/rename-track-dialog";
+import { SliceModal } from "@/components/slice-modal";
+import type { Track } from "@/lib/api/types";
 
 type Props = { player: any; queue: any };
 export function NowPlayingCard({ player, queue }: Readonly<Props>) {
+  const [renameTrack, setRenameTrack] = useState<Track | null>(null);
+  const [sliceTrack, setSliceTrack] = useState<Track | null>(null);
+
   const currentTrack = player.data?.currentTrackId
     ? queue.data?.find(
         (item: any) => item.trackId === player.data.currentTrackId,
@@ -25,7 +32,13 @@ export function NowPlayingCard({ player, queue }: Readonly<Props>) {
   const duration = player.data?.durationSeconds ?? currentTrack?.durationSeconds ?? 0;
   const progress = duration > 0 ? Math.min(100, (position / duration) * 100) : 0;
   const run = async (action: () => Promise<unknown>, success: string) => {
-    try { await action(); toast.success(success); await player.refetch(); } catch (error) { toast.error((error as Error).message); }
+    try {
+      await action();
+      toast.success(success);
+      await player.refetch();
+    } catch (error) {
+      toast.error((error as Error).message);
+    }
   };
   const repeatEnabled = player.data?.repeat ?? false;
 
@@ -58,13 +71,41 @@ export function NowPlayingCard({ player, queue }: Readonly<Props>) {
             )}
           </div>
           <div className="min-w-0 flex-1">
-            <p className="truncate font-medium">
-              {currentTrack?.title ?? "Выберите трек в библиотеке"}
-            </p>
+            <div className="flex items-center gap-2">
+              <p className="truncate font-medium">
+                {currentTrack?.title ?? "Выберите трек в библиотеке"}
+              </p>
+              {currentTrack && (
+                <>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="size-7"
+                    onClick={() => setRenameTrack(currentTrack)}
+                    title="Переименовать трек"
+                  >
+                    <Edit2 className="size-3.5" />
+                  </Button>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="size-7"
+                    onClick={() => setSliceTrack(currentTrack)}
+                    title="Разрезать видео на треки"
+                  >
+                    <Scissors className="size-3.5" />
+                  </Button>
+                </>
+              )}
+            </div>
             <p className="mt-1 text-sm text-muted-foreground">
               {formatDuration(position)} / {formatDuration(duration || null)}
             </p>
-            <Progress value={progress} className="mt-4" aria-label="Прогресс воспроизведения" />
+            <Progress
+              value={progress}
+              className="mt-4"
+              aria-label="Прогресс воспроизведения"
+            />
             <div className="mt-5 flex items-center gap-2">
               <Button
                 size="icon"
@@ -77,7 +118,12 @@ export function NowPlayingCard({ player, queue }: Readonly<Props>) {
               <Button
                 size="icon"
                 variant={repeatEnabled ? "default" : "outline"}
-                onClick={() => void run(() => player.setRepeat(!repeatEnabled), repeatEnabled ? "Повтор выключен" : "Повтор включен")}
+                onClick={() =>
+                  void run(
+                    () => player.setRepeat(!repeatEnabled),
+                    repeatEnabled ? "Повтор выключен" : "Повтор включен"
+                  )
+                }
                 disabled={!player.data}
                 aria-pressed={repeatEnabled}
                 aria-label="Зациклить текущий трек"
@@ -95,11 +141,32 @@ export function NowPlayingCard({ player, queue }: Readonly<Props>) {
               >
                 {player.data?.state === "playing" ? <Pause /> : <Play />}
               </Button>
-
             </div>
           </div>
         </div>
       </CardContent>
+
+      {/* Rename Dialog */}
+      <RenameTrackDialog
+        track={renameTrack}
+        open={Boolean(renameTrack)}
+        onOpenChange={(open) => !open && setRenameTrack(null)}
+        onRenamed={() => {
+          void queue.refetch();
+          void player.refetch();
+        }}
+      />
+
+      {/* Slice Modal */}
+      <SliceModal
+        open={Boolean(sliceTrack)}
+        onOpenChange={(open) => !open && setSliceTrack(null)}
+        track={sliceTrack}
+        guildId={queue.guildId ?? null}
+        onSuccess={() => {
+          void queue.refetch();
+        }}
+      />
     </Card>
   );
 }
